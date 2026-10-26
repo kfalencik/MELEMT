@@ -6,6 +6,23 @@
         <description>MELEMT updates</description>
         <language>en</language>
         <item>
+            <title>Version 1.0.1</title>
+            <pubDate>Mon, 26 Oct 2026 14:06:34 GMT</pubDate>
+            <sparkle:version>2</sparkle:version>
+            <sparkle:shortVersionString>1.0.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <sparkle:fullReleaseNotesLink>https://github.com/kfalencik/MELEMT/releases/tag/v1.0.1</sparkle:fullReleaseNotesLink>
+            <description><![CDATA[
+<h3>MELEMT 1.0.1</h3>
+<ul>
+<li>Now runs on macOS 26 (Tahoe) as well as macOS 27</li>
+<li>Finds the game in Steam for Mac&#x27;s own libraries (used with NotProton), not just libraries on other drives and in CrossOver bottles</li>
+<li>New guide in the README for setting up the game with Steam + NotProton or a CrossOver bottle</li>
+</ul>
+            ]]></description>
+            <enclosure url="https://github.com/kfalencik/MELEMT/releases/download/v1.0.1/MELEMT-1.0.1.zip" type="application/octet-stream" sparkle:edSignature="PUiIu43ShzBinND7l/75VcmCppc0tV/B1rVNM/WcyeQ7eXJtYlkbSwBl5MOulCDmukv7rGujJJaJa0k8/Ei2Bg==" length="54695609" />
+        </item>
+        <item>
             <title>Version 1.0</title>
             <pubDate>Mon, 26 Oct 2026 13:45:35 GMT</pubDate>
             <sparkle:version>1</sparkle:version>
