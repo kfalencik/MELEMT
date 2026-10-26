@@ -31,6 +31,15 @@ struct GameSettingsView: View {
             .padding(20)
 
             Form {
+                Section {
+                    ArtworkRow(game: game, kind: .cover)
+                    ArtworkRow(game: game, kind: .banner)
+                } header: {
+                    Text("Artwork")
+                } footer: {
+                    Text("Use your own pictures, such as the original cover art. Artwork changes apply right away.")
+                }
+
                 Section("Launcher (all three games)") {
                     if launcherFiles.isEmpty {
                         Text("The launcher's settings file appears after the Legendary Edition launcher has run once.")

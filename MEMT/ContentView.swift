@@ -17,6 +17,9 @@ struct ContentView: View {
     @State private var isChoosingGameFolder = false
     @State private var isDropTargeted = false
     @State private var isConnectingNexus = false
+    /// Launcher Mode shows only the Launch screen, for using MELEMT as a plain game launcher.
+    @AppStorage(Self.launcherModeKey) private var launcherMode = false
+    static let launcherModeKey = "launcherMode"
 
     var body: some View {
         @Bindable var library = library
@@ -24,10 +27,28 @@ struct ContentView: View {
         Group {
             if library.install == nil {
                 SetupView(isChoosingGameFolder: $isChoosingGameFolder)
+            } else if launcherMode {
+                LaunchView()
+                    .toolbar(removing: .title)
+                    .toolbar {
+                        ToolbarItem(placement: .primaryAction) {
+                            Button("Show Mods", systemImage: "sidebar.left") { launcherMode = false }
+                                .help("Leave Launcher Mode and show your mods and settings.")
+                        }
+                    }
             } else {
                 NavigationSplitView {
                     Sidebar(selection: $selection, isConnectingNexus: $isConnectingNexus)
                         .navigationSplitViewColumnWidth(230)
+                        .toolbar {
+                            ToolbarItem(placement: .primaryAction) {
+                                Button("Launcher Mode", systemImage: "play.rectangle") {
+                                    selection = .launch
+                                    launcherMode = true
+                                }
+                                .help("Show only the games and their Play buttons.")
+                            }
+                        }
                 } detail: {
                     switch selection {
                     case .launch:
@@ -60,6 +81,7 @@ struct ContentView: View {
         .dropDestination(for: URL.self) { urls, _ in
             guard library.install != nil, !urls.isEmpty else { return false }
             urls.forEach { downloads.add(fileURL: $0) }
+            launcherMode = false
             selection = .downloads
             return true
         } isTargeted: { isDropTargeted = $0 && library.install != nil }
@@ -78,6 +100,7 @@ struct ContentView: View {
         .onOpenURL { url in
             // "Mod Manager Download" on nexusmods.com opens an nxm:// link in this app.
             downloads.handle(nxmURL: url)
+            launcherMode = false
             selection = .downloads
         }
         .sheet(isPresented: $isConnectingNexus) {

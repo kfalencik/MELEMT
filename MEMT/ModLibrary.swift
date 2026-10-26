@@ -96,10 +96,8 @@ final class ModLibrary {
         await rerunMergesIfHelperChanged()
     }
 
-    /// Bump when LEModHelper's merge output changes (e.g. a bug fix), so games merged by an older
-    /// helper are re-merged once. 2: fixed LE1 config merge dropping BIOUI.ini (crash at main menu).
-    /// 3: per-mod config delta / texture override merges (M3 does these at install) and M3's merge DLC.
-    /// 5: undid the LE1 Community Patch menu "fix" (its menus do work; it turned them off).
+    /// Raise when LEModHelper's merge output changes, so games merged by an older helper are
+    /// re-merged once.
     private static let mergeVersion = 5
 
     /// Re-runs the post-install merges for games that have mods and were merged by an older helper.
@@ -114,9 +112,6 @@ final class ModLibrary {
             }
             activity = "Updating \(game.displayName)'s mod merges…"
             do {
-                if UserDefaults.standard.integer(forKey: key) < 3 {
-                    try await ModService.applyMissedDLCMerges(for: game, in: install, progress: progressHandler)
-                }
                 try await ModService.runPostInstall(for: game, in: install, progress: progressHandler)
                 UserDefaults.standard.set(Self.mergeVersion, forKey: key)
             } catch {

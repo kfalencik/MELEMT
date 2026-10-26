@@ -215,7 +215,7 @@ final class DownloadManager {
         let folder = unpackFolder
         let downloads = downloadsFolder
         // Everything in MELEMT's own Downloads folder belongs to a library item or a resumable
-        // download. Anything else is a leftover (e.g. cut off by an older version) and goes to the Trash.
+        // download. Anything else is a leftover and goes to the Trash.
         let referenced = Set(items.flatMap { [$0.partialURL, $0.archiveURL, $0.destinationURL] }.compactMap { $0?.standardizedFileURL.path })
         Task.detached {
             let fm = FileManager.default

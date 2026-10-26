@@ -4,6 +4,8 @@ import SwiftUI
     @State private var library: ModLibrary
     @State private var downloads: DownloadManager
     @State private var updater = AppUpdater()
+    @State private var artwork = CustomArtwork()
+    @AppStorage(ContentView.launcherModeKey) private var launcherMode = false
     @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate
 
     init() {
@@ -18,6 +20,7 @@ import SwiftUI
                 .environment(library)
                 .environment(downloads)
                 .environment(updater)
+                .environment(artwork)
                 // Fixed size that fits every Mac with a 1440×900 or larger display.
                 .frame(width: 1100, height: 740)
                 .preferredColorScheme(.dark)
@@ -28,6 +31,10 @@ import SwiftUI
             CommandGroup(after: .appInfo) {
                 Button("Check for Updates…") { updater.checkForUpdates() }
                     .disabled(!updater.canCheckForUpdates)
+            }
+            CommandGroup(after: .sidebar) {
+                Toggle("Launcher Mode", isOn: $launcherMode)
+                    .keyboardShortcut("l", modifiers: [.command, .shift])
             }
         }
 

@@ -319,34 +319,6 @@ nonisolated enum ModService {
         }
     }
 
-    /// Earlier versions of this app didn't run M3's per-DLC merges (config deltas, texture overrides).
-    /// Runs them once for enabled mods this app installed. Mods installed by M3 already had them, and
-    /// running config deltas twice would apply them twice, so those are skipped.
-    @concurrent
-    static func applyMissedDLCMerges(for game: LEGame, in install: GameInstall, progress: @escaping @Sendable (String) -> Void) async throws {
-        let fm = FileManager.default
-        let dlcDirectory = install.dlcDirectory(game)
-        for folder in ((try? fm.contentsOfDirectory(atPath: dlcDirectory.path)) ?? []).sorted() where folder.uppercased().hasPrefix("DLC_") {
-            let folderURL = dlcDirectory.appending(path: folder)
-            guard let meta = MetaCMM(contentsOf: folderURL.appending(path: MetaCMM.fileName)),
-                  meta.installerBuild == MetaCMM.installerBuild else { continue }
-            let cooked = (try? fm.contentsOfDirectory(atPath: folderURL.appending(path: "CookedPCConsole").path)) ?? []
-            let hasDeltas = game != .le1 && cooked.contains { $0.hasPrefix("ConfigDelta-") && $0.lowercased().hasSuffix(".m3cd") }
-            let hasOverrides = cooked.contains { $0.lowercased().hasSuffix(".m3to") }
-                && !fm.fileExists(atPath: folderURL.appending(path: "CombinedTextureOverrides.btp").path)
-            guard hasDeltas || hasOverrides else { continue }
-            progress("Applying \(folder)'s config and texture changes…")
-            try await HelperRunner.run("dlc-merge", arguments: [
-                "game": game.rawValue,
-                "gamedir": install.gameDirectory(game).path,
-                "dlcfolder": folder,
-                // Texture overrides need moddesc 9.2+, which every mod shipping them targets.
-                "cmmver": hasOverrides ? "9.2" : (meta.featureLevel ?? "9.0"),
-                "backupdir": HelperRunner.backupDirectory(for: game, in: install).path,
-            ], progress: progress)
-        }
-    }
-
     /// Clears read-only flags under `url` (file or folder).
     private static func makeWritable(_ url: URL) {
         let fm = FileManager.default
@@ -430,7 +402,6 @@ nonisolated enum ModService {
             }
             try replaceFile(asiFolder.appending(path: GameHealth.autoloadEnablerFile), with: bundled(GameHealth.autoloadEnablerFile))
         }
-        if game == .le1 { removeLE1DLCLink(in: install) }
         try installVCRuntime(into: binaries)
     }
 
@@ -464,15 +435,6 @@ nonisolated enum ModService {
         }
     }
 
-    /// An earlier version created a link at <root>/BioGame (a wrong guess about why LE1 mods didn't
-    /// load). It isn't needed; remove it if it's ours.
-    static func removeLE1DLCLink(in install: GameInstall) {
-        let link = install.root.appending(path: "BioGame")
-        if (try? FileManager.default.destinationOfSymbolicLink(atPath: link.path)) == "Game/ME1/BioGame" {
-            try? FileManager.default.removeItem(at: link)
-        }
-    }
-
     /// Copies `source` over `destination`, replacing it if it exists.
     private static func replaceFile(_ destination: URL, with source: URL) throws {
         let fm = FileManager.default
@@ -493,62 +455,8 @@ nonisolated enum ModService {
     /// The merges M3 runs after any change to a game's mods (PlotManager sync, LE1 Coalesced and 2DA
     /// merges, shader merge), then AutoTOC so the game sees every file's current size. They depend
     /// on the set of enabled DLC, so this also runs after enabling, disabling or uninstalling.
-    /// Fixes for released mods that break the game. Each turns off specific files in an installed
-    /// mod's folder (renamed to .disabled, so it's reversible) before the merges run.
-    struct KnownFix: Sendable {
-        let game: LEGame
-        let folder: String
-        let versions: Set<String>
-        let disable: [String]
-        let reason: String
-    }
-
-    static let knownFixes: [KnownFix] = []
-
-    /// Files an earlier version of the LE1 Community Patch fix turned off; put back so the mod is whole.
-    static func undoRetiredFixes(for game: LEGame, in install: GameInstall) {
-        guard game == .le1 else { return }
-        let fm = FileManager.default
-        for folderName in ["DLC_MOD_LE1CP", InstalledMod.disabledPrefix + "DLC_MOD_LE1CP"] {
-            let cooked = install.dlcDirectory(game).appending(path: folderName).appending(path: "CookedPCConsole")
-            for name in ["ConfigDelta-ModSettingsMenu.m3cd", "ConfigDelta-PCOptions_Persistent.m3cd"] {
-                let disabled = cooked.appending(path: name + ".disabled")
-                let original = cooked.appending(path: name)
-                if fm.fileExists(atPath: disabled.path) && !fm.fileExists(atPath: original.path) {
-                    try? fm.moveItem(at: disabled, to: original)
-                }
-            }
-        }
-    }
-
-    /// Applies `knownFixes` to the mods installed in `game`; returns the reasons for any that apply.
-    @discardableResult
-    static func applyKnownFixes(for game: LEGame, in install: GameInstall) -> [String] {
-        let fm = FileManager.default
-        var applied: [String] = []
-        for fix in knownFixes where fix.game == game {
-            for folderName in [fix.folder, InstalledMod.disabledPrefix + fix.folder] {
-                let folder = install.dlcDirectory(game).appending(path: folderName)
-                guard let meta = MetaCMM(contentsOf: folder.appending(path: MetaCMM.fileName)),
-                      fix.versions.contains(meta.version) else { continue }
-                for relative in fix.disable {
-                    let file = folder.appending(path: relative)
-                    if fm.fileExists(atPath: file.path) {
-                        let disabled = file.appendingPathExtension("disabled")
-                        try? fm.removeItem(at: disabled)
-                        try? fm.moveItem(at: file, to: disabled)
-                    }
-                }
-                applied.append(fix.reason)
-            }
-        }
-        return applied
-    }
-
     @concurrent
     static func runPostInstall(for game: LEGame, in install: GameInstall, progress: @escaping @Sendable (String) -> Void) async throws {
-        undoRetiredFixes(for: game, in: install)
-        applyKnownFixes(for: game, in: install)
         try await HelperRunner.run("post-install", arguments: [
             "game": game.rawValue,
             "gamedir": install.gameDirectory(game).path,

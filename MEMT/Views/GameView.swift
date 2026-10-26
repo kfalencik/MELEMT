@@ -251,11 +251,6 @@ private struct InstalledModRow: View {
 
     private var mod: InstalledMod { mods[0] }
     private var isEnabled: Bool { mods.allSatisfy(\.isEnabled) }
-    private var knownFix: ModService.KnownFix? {
-        ModService.knownFixes.first { fix in
-            fix.game == game && mods.contains { $0.dlcName.caseInsensitiveCompare(fix.folder) == .orderedSame && fix.versions.contains($0.meta?.version ?? "") }
-        }
-    }
 
     var body: some View {
         HStack(spacing: 14) {
@@ -276,12 +271,6 @@ private struct InstalledModRow: View {
                 Text(details)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                if let fix = knownFix {
-                    Label("Patched by MELEMT", systemImage: "bandage.fill")
-                        .font(.caption)
-                        .foregroundStyle(MEStyle.omniOrange)
-                        .help(fix.reason)
-                }
             }
 
             Spacer()

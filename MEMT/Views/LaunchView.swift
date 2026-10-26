@@ -66,74 +66,56 @@ struct LaunchView: View {
 
 }
 
-/// A tall game card: key art, title, mod status and a Play button.
+/// A tall game card: key art and a Play button.
 private struct GameLaunchCard: View {
     @Environment(ModLibrary.self) private var library
-    @Environment(DownloadManager.self) private var downloads
+    @Environment(CustomArtwork.self) private var artwork
     let game: LEGame
     @State private var isHovered = false
-
-    private var artAlignment: Alignment {
-        switch game {
-        case .le1: .leading
-        case .le2: .center
-        case .le3: .trailing
-        }
-    }
-
-    private var statusText: String {
-        guard library.isInstalled(game) else { return "Not installed" }
-        let count = library.modCount(for: game, enabledOnly: true) + downloads.gameFileMods(for: game).count
-        let turnedOff = library.modCount(for: game) - library.modCount(for: game, enabledOnly: true)
-        let active = count == 0 ? "No mods active" : count == 1 ? "1 mod active" : "\(count) mods active"
-        // Make disabled mods obvious, so a vanilla-looking game isn't a surprise.
-        return turnedOff == 0 ? active : "\(active) · \(turnedOff) turned off"
-    }
 
     var body: some View {
         let tint = MEStyle.tint(for: game)
         VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .bottomLeading) {
-                GameArt(game: game)
-                    .clipped()
-                // The art overflows the card before clipping; keep it from catching the mouse
-                // over the neighbouring cards.
-                .allowsHitTesting(false)
-                LinearGradient(colors: [.clear, .black.opacity(0.85)], startPoint: .center, endPoint: .bottom)
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(MEStyle.codename(for: game))
-                        .font(.system(size: 54, weight: .black))
-                        .fontWidth(.expanded)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                        .foregroundStyle(tint)
-                        .shadow(color: tint.opacity(0.6), radius: 12)
-                    Text(game.displayName).meHeading(size: 17)
-                    N7Stripe(color: tint, height: 4)
+                if let cover = artwork.image(for: game, .cover) {
+                    // Chosen covers usually carry their own title, so nothing is drawn over them.
+                    ArtworkImage(image: cover)
+                } else {
+                    GameArt(game: game)
+                        .clipped()
+                        // The art overflows the card before clipping; keep it from catching the mouse
+                        // over the neighbouring cards.
+                        .allowsHitTesting(false)
+                    LinearGradient(colors: [.clear, .black.opacity(0.85)], startPoint: .center, endPoint: .bottom)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(MEStyle.codename(for: game))
+                            .font(.system(size: 54, weight: .black))
+                            .fontWidth(.expanded)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                            .foregroundStyle(tint)
+                            .shadow(color: tint.opacity(0.6), radius: 12)
+                        Text(game.displayName).meHeading(size: 17)
+                        N7Stripe(color: tint, height: 4)
+                    }
+                    .padding(18)
                 }
-                .padding(18)
             }
             .frame(height: 290)
 
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 6) {
-                    Circle().fill(library.isInstalled(game) ? Color.green : Color.secondary).frame(width: 7, height: 7)
-                    Text(statusText).font(.callout).foregroundStyle(.secondary)
-                }
-                Button {
-                    Task { await library.launch(game) }
-                } label: {
-                    Label("Play", systemImage: "play.fill")
-                        .font(.headline)
-                        .fontWidth(.expanded)
-                        .textCase(.uppercase)
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.glassProminent)
-                .tint(tint)
-                .controlSize(.extraLarge)
-                .disabled(!library.isInstalled(game) || library.activity != nil)
+            Button {
+                Task { await library.launch(game) }
+            } label: {
+                Label("Play", systemImage: "play.fill")
+                    .font(.headline)
+                    .fontWidth(.expanded)
+                    .textCase(.uppercase)
+                    .frame(maxWidth: .infinity)
             }
+            .buttonStyle(.glassProminent)
+            .tint(tint)
+            .controlSize(.extraLarge)
+            .disabled(!library.isInstalled(game) || library.activity != nil)
             .padding(16)
         }
         .background(MEStyle.panel.opacity(0.9))

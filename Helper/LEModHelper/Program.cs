@@ -51,7 +51,7 @@ internal static class Program
     {
         if (args.Length == 0)
         {
-            return Fail("No command given. Commands: merges, post-install, prepare-game, install-asi.");
+            return Fail("No command given. Commands: merges, config-read, apply-settings, dlc-merge, post-install, prepare-game, install-asi.");
         }
         // M3 runs with the invariant culture (App.xaml.cs); its parsing and casing depend on it.
         System.Globalization.CultureInfo.DefaultThreadCurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
@@ -108,28 +108,6 @@ internal static class Program
                     }
                     ResultOut.WriteLine(JsonSerializer.Serialize(new { ok = true, values, messages = Messages }));
                     return 0;
-                }
-
-                case "tlk-find":
-                {
-                    // Diagnostics: which loaded talk tables (basegame Startup + DLC GlobalTlk) contain a string ID.
-                    var target = CreateTarget(game, Required(options, "gamedir"));
-                    var id = int.Parse(Required(options, "strref"));
-                    var bio = Path.Combine(target.TargetPath, "BioGame");
-                    var files = MEDirectories.GetFilesOrdered(Path.Combine(bio, "CookedPCConsole"), "Startup*.pcc")
-                        .Concat(Directory.Exists(Path.Combine(bio, "DLC")) ? MEDirectories.GetFilesOrdered(Path.Combine(bio, "DLC"), "*GlobalTlk*.pcc", SearchOption.AllDirectories) : Array.Empty<string>())
-                        .Where(f => !Path.GetFileName(f).Contains("_") || Path.GetFileNameWithoutExtension(f).EndsWith("INT", StringComparison.OrdinalIgnoreCase) || Path.GetFileNameWithoutExtension(f).EndsWith("GlobalTlk", StringComparison.OrdinalIgnoreCase));
-                    foreach (var f in files)
-                    {
-                        using var pcc = LegendaryExplorerCore.Packages.MEPackageHandler.OpenMEPackage(f);
-                        foreach (var exp in pcc.Exports.Where(x => x.ClassName == "BioTlkFile"))
-                        {
-                            var tlk = new LegendaryExplorerCore.TLK.ME1.ME1TalkFile(exp);
-                            var text = tlk.FindDataById(id, returnNullIfNotFound: true);
-                            Messages.Add($"{Path.GetFileName(f)} {exp.InstancedFullPath}: {tlk.StringRefs.Count} strings, {id} = {text ?? "(missing)"}");
-                        }
-                    }
-                    return Succeed(Array.Empty<string>());
                 }
 
                 case "apply-settings":

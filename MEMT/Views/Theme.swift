@@ -76,28 +76,23 @@ private struct Parallelogram: Shape {
     }
 }
 
-/// Dark banner with the game's color, used at the top of each game page.
-/// Banner at the top of each game page: the Legendary Edition key art from Steam (cropped to the
-/// blue end for ME1, the middle for ME2 and the red end for ME3), or the drawn space backdrop.
+/// Banner at the top of each game page: the banner picture the user chose, or the game's drawn art.
 struct GameBanner<Trailing: View>: View {
+    @Environment(CustomArtwork.self) private var artwork
     let game: LEGame
     let subtitle: String
     let statusColor: Color
     @ViewBuilder var trailing: Trailing
 
-    private var artAlignment: Alignment {
-        switch game {
-        case .le1: .leading
-        case .le2: .center
-        case .le3: .trailing
-        }
-    }
-
     var body: some View {
         let tint = MEStyle.tint(for: game)
         ZStack(alignment: .bottomLeading) {
-            GameArt(game: game)
-                .clipped()
+            if let banner = artwork.image(for: game, .banner) {
+                ArtworkImage(image: banner)
+            } else {
+                GameArt(game: game)
+                    .clipped()
+            }
             // Darken toward the text so it stays readable over bright art.
             LinearGradient(
                 colors: [.black.opacity(0.85), .black.opacity(0.35), .clear],

@@ -148,7 +148,7 @@ nonisolated enum GameLauncher {
 
         let running = runningSteamPIDs()
         if !running.isEmpty {
-            if running.contains(where: notProtonLoaded(intoPID:)) && !lastGameRanWithMetalDebugging() { return }
+            if running.contains(where: notProtonLoaded(intoPID:)) { return }
             progress("Restarting Steam…")
             NSWorkspace.shared.open(URL(string: "steam://exit")!)
             for _ in 0..<60 where !runningSteamPIDs().isEmpty {
@@ -197,16 +197,6 @@ nonisolated enum GameLauncher {
         result["MTL_SHADER_VALIDATION"] = "0"
         result.merge(extra) { _, new in new }
         return result
-    }
-
-    /// Whether the game's last run used Metal's debug layer, meaning the running Steam was started
-    /// with Xcode's debugging settings (from a MELEMT run in Xcode) and passes them to the game,
-    /// which then crashes. NotProton writes the game's Wine output here.
-    private static func lastGameRanWithMetalDebugging() -> Bool {
-        let log = FileManager.default.homeDirectoryForCurrentUser
-            .appending(path: "Library/Application Support/notproton/launchers/\(steamAppID)/notproton-wine.log")
-        guard let text = try? String(contentsOf: log, encoding: .utf8) else { return false }
-        return text.contains("MTLDebugDevice")
     }
 
     /// Process IDs of the running Steam client (the Steam.app launcher and the client it starts).
