@@ -324,9 +324,11 @@ nonisolated struct InstallPlan: Sendable {
         let selected = package.options.filter { states[$0.id]?.selected == true }
         selectedOptionNames = selected.filter { !$0.hidden }.map(\.name)
 
-        func files(under relative: String) -> [(relative: String, url: URL)] {
-            guard let folder = PathResolver.resolve(relative, in: root), PathResolver.isDirectory(folder),
-                  let enumerator = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: [.isRegularFileKey]) else { return [] }
+        func files(under relative: String) throws -> [(relative: String, url: URL)] {
+            guard let folder = PathResolver.resolve(relative, in: root), PathResolver.isDirectory(folder) else {
+                throw ModPackage.ParseError(message: "The mod's folder \"\(relative)\" is missing from the unpacked download.")
+            }
+            guard let enumerator = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: [.isRegularFileKey]) else { return [] }
             let base = folder.standardizedFileURL.path
             return enumerator.allObjects.compactMap { item in
                 guard let url = item as? URL, !PathResolver.isDirectory(url), url.lastPathComponent != ".DS_Store" else { return nil }
@@ -355,7 +357,7 @@ nonisolated struct InstallPlan: Sendable {
         }
         let dlcAltFiles = selected.filter { $0.kind == .file && $0.header == .customDLC }
         for mapping in mappings {
-            for file in files(under: mapping.source) {
+            for file in try files(under: mapping.source) {
                 let sourceKey = "\(mapping.source)/\(file.relative)"
                 let destinationKey = "\(mapping.destination)/\(file.relative)"
                 if let alt = dlcAltFiles.first(where: { matches($0.modFile, sourceKey) }) {
@@ -372,7 +374,7 @@ nonisolated struct InstallPlan: Sendable {
             switch option.operation {
             case "OP_ADD_FOLDERFILES_TO_CUSTOMDLC":
                 guard let src = option.modAltDLC, let dest = option.modDestDLC else { continue }
-                for file in files(under: src) { dlcFiles["\(dest)/\(file.relative)"] = file.url }
+                for file in try files(under: src) { dlcFiles["\(dest)/\(file.relative)"] = file.url }
             case "OP_ADD_MULTILISTFILES_TO_CUSTOMDLC":
                 guard let rootPath = option.multiListRoot, let dest = option.modDestDLC else { continue }
                 for entry in multilist(option) {

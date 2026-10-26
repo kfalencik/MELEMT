@@ -341,6 +341,8 @@ private struct InstalledModRow: View {
 
 /// An installed mod that only changes the game's own files, so it has no folder to switch off.
 private struct GameFileModRow: View {
+    @Environment(DownloadManager.self) private var downloads
+    @Environment(ModLibrary.self) private var library
     let item: DownloadItem
     let game: LEGame
 
@@ -363,6 +365,10 @@ private struct GameFileModRow: View {
                 .background(MEStyle.tint(for: game).opacity(0.2), in: .capsule)
                 .foregroundStyle(MEStyle.tint(for: game))
                 .help("To remove it, use Restore Original Game Files in the ••• menu.")
+            Button("Reinstall…") { downloads.install(item, chooseOptions: true) }
+                .buttonStyle(.glass)
+                .disabled(item.archiveURL == nil || library.activity != nil)
+                .help("Install this mod again, choosing its options.")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)

@@ -466,7 +466,8 @@ final class DownloadManager {
     /// Installs (or reinstalls) a library item, unpacking it first if needed. Mods with optional
     /// components open the options window, pre-filled with the last choices.
     func install(_ item: DownloadItem, chooseOptions: Bool = false) {
-        if item.phase == .ready, item.packages.count == 1, item.packages[0].canInstall {
+        if item.phase == .ready, item.packages.count == 1, item.packages[0].canInstall,
+           FileManager.default.fileExists(atPath: item.packages[0].rootURL.path) {
             decideInstall(item, userRequested: true, chooseOptions: chooseOptions)
         } else if item.archiveURL != nil {
             Task { await unpack(item, userRequested: true, chooseOptions: chooseOptions) }
@@ -825,6 +826,7 @@ final class DownloadManager {
 
     /// Queues an install. Installs run one at a time because they share the game's merged files.
     func install(_ package: ModPackage, from item: DownloadItem, choices: [String: Bool]? = nil) {
+        guard !installQueue.contains(where: { $0.0 === item && $0.1.id == package.id }) else { return }
         item.phase = .installing
         item.status = "Waiting for other installs…"
         installQueue.append((item, package, choices ?? item.chosenOptions))
@@ -846,6 +848,19 @@ final class DownloadManager {
     /// Returns the error message if it failed.
     @discardableResult
     private func installNow(_ package: ModPackage, from item: DownloadItem, choices: [String: Bool]) async -> String? {
+        var package = package
+        if !FileManager.default.fileExists(atPath: package.rootURL.path) {
+            // The unpacked copy was removed after an earlier install; unpack the archive again.
+            let name = package.name
+            guard await unpack(item, userRequested: true, decide: false),
+                  let fresh = item.packages.first(where: { $0.name == name }) else {
+                if case .failed(let message) = item.phase { return message }
+                let message = "\(name)'s files couldn't be unpacked again. Remove it from the library and download it again."
+                item.phase = .failed(message)
+                return message
+            }
+            package = fresh
+        }
         item.phase = .installing
         item.status = "Installing into \(package.game?.displayName ?? "the game")…"
         defer { item.status = nil }
@@ -866,7 +881,7 @@ final class DownloadManager {
                 item.attentionReasons = []
                 let remaining = item.packages.filter { $0.canInstall && !item.installedPackageIDs.contains($0.id) }
                 item.phase = remaining.isEmpty ? .installed : .ready
-                if remaining.isEmpty, let folder = item.unpackedFolder {
+                if remaining.isEmpty, !installQueue.contains(where: { $0.0 === item }), let folder = item.unpackedFolder {
                     // The archive stays in the library for reinstalling; the unpacked copy isn't needed.
                     item.unpackedFolder = nil
                     Task.detached { try? FileManager.default.removeItem(at: folder) }
