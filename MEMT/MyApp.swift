@@ -17,6 +17,7 @@ import SwiftUI
             ContentView()
                 .environment(library)
                 .environment(downloads)
+                .environment(updater)
                 // Fixed size that fits every Mac with a 1440×900 or larger display.
                 .frame(width: 1100, height: 740)
                 .preferredColorScheme(.dark)
@@ -35,6 +36,9 @@ import SwiftUI
                 .environment(library)
                 .environment(downloads)
                 .environment(updater)
+                // The Settings window sizes itself to the form; in the main window it fills and scrolls.
+                .frame(width: 520)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

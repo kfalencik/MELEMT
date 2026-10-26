@@ -94,8 +94,6 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 520)
-        .fixedSize(horizontal: false, vertical: true)
         .fileImporter(isPresented: $isChoosingGameFolder, allowedContentTypes: [.folder]) { result in
             if case .success(let url) = result {
                 Task { await library.selectGameFolder(url) }

@@ -143,7 +143,7 @@ final class ModLibrary {
     }
 
     /// Starts `game` straight from the app (skipping the Legendary Edition launcher's game picker).
-    func launch(_ game: LEGame, resume: Bool) async {
+    func launch(_ game: LEGame) async {
         guard activity == nil else {
             errorMessage = "Wait for the current task to finish before starting the game."
             return
@@ -155,7 +155,7 @@ final class ModLibrary {
         }
         activity = "Starting \(game.displayName) through \(method.displayName)…"
         do {
-            try await GameLauncher.launch(game, resume: resume, using: method, install: install, progress: progressHandler)
+            try await GameLauncher.launch(game, using: method, install: install, progress: progressHandler)
             try? await Task.sleep(for: .seconds(3))
         } catch {
             errorMessage = error.localizedDescription
@@ -182,48 +182,6 @@ final class ModLibrary {
         let progress = progressHandler
         await perform {
             try await ModService.removeAllMods(for: game, in: install, progress: progress)
-        }
-    }
-
-    private static func backupKey(_ game: LEGame) -> String { "gameBackupFolder.\(game.rawValue)" }
-
-    /// The most recent full backup of `game`, if it's still where it was made.
-    func gameBackup(for game: LEGame) -> ModService.GameBackup? {
-        guard let path = UserDefaults.standard.string(forKey: Self.backupKey(game)) else { return nil }
-        return ModService.readBackup(at: URL(filePath: path), game: game)
-    }
-
-    /// Makes (or refreshes) a full backup of `game` in `destination`.
-    func backUpGame(_ game: LEGame, to destination: URL) async {
-        guard let install else { return }
-        activity = "Backing up \(game.displayName)…"
-        let progress = progressHandler
-        await perform {
-            let backup = try await ModService.backUpGame(game, in: install, to: destination, progress: progress)
-            if let folder = backup.folder {
-                UserDefaults.standard.set(folder.path, forKey: Self.backupKey(game))
-            }
-        }
-    }
-
-    /// Uses an existing backup folder the user picked (e.g. made on another Mac).
-    func useBackup(at folder: URL, for game: LEGame) -> Bool {
-        let candidates = [folder, ModService.backupFolder(for: game, in: folder)]
-        guard let found = candidates.first(where: { ModService.readBackup(at: $0, game: game) != nil }) else {
-            errorMessage = "That folder isn't a MELEMT backup of \(game.displayName)."
-            return false
-        }
-        UserDefaults.standard.set(found.path, forKey: Self.backupKey(game))
-        return true
-    }
-
-    /// Puts `game` back exactly as it was in its backup.
-    func restoreGame(_ game: LEGame) async {
-        guard let install, let backup = gameBackup(for: game) else { return }
-        activity = "Restoring \(game.displayName) from backup…"
-        let progress = progressHandler
-        await perform {
-            try await ModService.restoreGame(game, in: install, from: backup, progress: progress)
         }
     }
 

@@ -3,9 +3,6 @@ import SwiftUI
 /// The launcher home screen: one card per game with its art and a Play button.
 struct LaunchView: View {
     @Environment(ModLibrary.self) private var library
-    @Binding var selection: SidebarItem?
-    @AppStorage("launchResumesLastSave") private var resumeLastSave = false
-    @AppStorage(GameLauncher.preferredMethodKey) private var preferredMethod = ""
 
     var body: some View {
         ScrollView {
@@ -13,12 +10,9 @@ struct LaunchView: View {
                 header
                 HStack(spacing: 20) {
                     ForEach(LEGame.allCases) { game in
-                        GameLaunchCard(game: game, resume: resumeLastSave) {
-                            selection = .game(game)
-                        }
+                        GameLaunchCard(game: game)
                     }
                 }
-                footer
             }
             .padding(.horizontal, 32)
             .padding(.vertical, 24)
@@ -57,7 +51,7 @@ struct LaunchView: View {
                 Image(nsImage: logo)
                     .resizable()
                     .scaledToFit()
-                    .frame(maxWidth: 300)
+                    .frame(maxWidth: 360)
                     .shadow(color: .black.opacity(0.6), radius: 20)
                     .accessibilityLabel("Mass Effect Legendary Edition")
             } else {
@@ -70,25 +64,6 @@ struct LaunchView: View {
         .padding(.top, 8)
     }
 
-    private var footer: some View {
-        VStack(spacing: 12) {
-            Toggle("Continue my last save", isOn: $resumeLastSave)
-                .toggleStyle(.switch)
-                .tint(MEStyle.n7Red)
-                .help("Skips the main menu and loads your most recent save.")
-            if let method = GameLauncher.currentMethod() {
-                Label("Starts through \(method.displayName) · mods are loaded automatically", systemImage: "gamecontroller.fill")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            } else {
-                Label("Install Steam (or Steam in a CrossOver bottle) to start the games from here.", systemImage: "exclamationmark.triangle.fill")
-                    .font(.callout)
-                    .foregroundStyle(MEStyle.omniOrange)
-            }
-        }
-        .padding(16)
-        .glassEffect(in: .rect(cornerRadius: 16))
-    }
 }
 
 /// A tall game card: key art, title, mod status and a Play button.
@@ -96,8 +71,6 @@ private struct GameLaunchCard: View {
     @Environment(ModLibrary.self) private var library
     @Environment(DownloadManager.self) private var downloads
     let game: LEGame
-    let resume: Bool
-    let manage: () -> Void
     @State private var isHovered = false
 
     private var artAlignment: Alignment {
@@ -140,22 +113,17 @@ private struct GameLaunchCard: View {
                 }
                 .padding(18)
             }
-            .frame(height: 230)
+            .frame(height: 290)
 
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 6) {
                     Circle().fill(library.isInstalled(game) ? Color.green : Color.secondary).frame(width: 7, height: 7)
                     Text(statusText).font(.callout).foregroundStyle(.secondary)
-                    Spacer()
-                    Button("Mods", action: manage)
-                        .buttonStyle(.borderless)
-                        .font(.callout)
-                        .disabled(!library.isInstalled(game))
                 }
                 Button {
-                    Task { await library.launch(game, resume: resume) }
+                    Task { await library.launch(game) }
                 } label: {
-                    Label(resume ? "Continue" : "Play", systemImage: "play.fill")
+                    Label("Play", systemImage: "play.fill")
                         .font(.headline)
                         .fontWidth(.expanded)
                         .textCase(.uppercase)

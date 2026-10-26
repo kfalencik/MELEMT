@@ -70,20 +70,20 @@ nonisolated enum GameLauncher {
         return available.first
     }
 
-    /// Launcher arguments: which game to boot, and optionally continue the most recent save.
-    static func arguments(for game: LEGame, resume: Bool) -> [String] {
+    /// Launcher arguments: which game to boot.
+    static func arguments(for game: LEGame) -> [String] {
         let number = switch game {
         case .le1: "1"
         case .le2: "2"
         case .le3: "3"
         }
-        return ["-game", number, "-autoterminate"] + (resume ? ["-RESUME"] : [])
+        return ["-game", number, "-autoterminate"]
     }
 
-    static func launch(_ game: LEGame, resume: Bool, using method: LaunchMethod, install: GameInstall, progress: @escaping @Sendable (String) -> Void = { _ in }) async throws {
+    static func launch(_ game: LEGame, using method: LaunchMethod, install: GameInstall, progress: @escaping @Sendable (String) -> Void = { _ in }) async throws {
         // With the launcher not skipped, no autoboot arguments are set, so the launcher opens normally.
         let skip = UserDefaults.standard.object(forKey: skipLauncherKey) as? Bool ?? true
-        let args = skip ? arguments(for: game, resume: resume) : []
+        let args = skip ? arguments(for: game) : []
         try installLauncherBypass(in: install)
         switch method {
         case .steam:

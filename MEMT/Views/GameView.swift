@@ -15,9 +15,6 @@ struct GameView: View {
     @State private var isConfirmingRemoveAll = false
     @State private var isConfirmingRepair = false
     @State private var isShowingGameSettings = false
-    @State private var isConfirmingRestoreBackup = false
-    @State private var isChoosingBackupDestination = false
-    @State private var isChoosingExistingBackup = false
 
     private var mods: [InstalledMod] { library.mods[game] ?? [] }
 
@@ -63,7 +60,7 @@ struct GameView: View {
                                     .buttonStyle(.glass)
                                     .tint(.white.opacity(0.12))
                                 Button {
-                                    Task { await library.launch(game, resume: false) }
+                                    Task { await library.launch(game) }
                                 } label: {
                                     Label("Play", systemImage: "play.fill")
                                         .fontWidth(.expanded)
@@ -92,9 +89,6 @@ struct GameView: View {
                             }
                             MaintenanceCard(
                                 game: game,
-                                backUp: { isChoosingBackupDestination = true },
-                                restore: { isConfirmingRestoreBackup = true },
-                                findBackup: { isChoosingExistingBackup = true },
                                 removeAll: { isConfirmingRemoveAll = true },
                                 rebuild: { isConfirmingRepair = true }
                             )
@@ -131,9 +125,6 @@ struct GameView: View {
                     }
                     Button("Rebuild Mods…", systemImage: "wrench.and.screwdriver") { isConfirmingRepair = true }
                     Divider()
-                    Button("Back Up Game…", systemImage: "externaldrive.badge.timemachine") { isChoosingBackupDestination = true }
-                    Button("Restore From Backup…", systemImage: "clock.arrow.circlepath") { isConfirmingRestoreBackup = true }
-                        .disabled(library.gameBackup(for: game) == nil)
                     Button("Remove All Mods…", systemImage: "trash", role: .destructive) { isConfirmingRemoveAll = true }
                     Divider()
                     Button("Change Game Folder…", systemImage: "externaldrive") { isChoosingGameFolder = true }
@@ -184,29 +175,6 @@ struct GameView: View {
             }
         } message: {
             Text("Every mod is moved to the Trash and the game's own files are put back as they were before this app changed them. Your downloaded mods stay in the library, so you can reinstall any of them.")
-        }
-        .confirmationDialog("Restore \(game.displayName) From Backup?", isPresented: $isConfirmingRestoreBackup) {
-            Button("Restore", role: .destructive) {
-                Task {
-                    await library.restoreGame(game)
-                    downloads.forgetGameFileMods(for: game)
-                }
-            }
-        } message: {
-            if let backup = library.gameBackup(for: game) {
-                Text("Puts \(game.displayName) back exactly as it was on \(backup.created.formatted(date: .abbreviated, time: .shortened)). Anything installed since, including mods, is removed. Only changed files are copied, so this is usually quick.")
-            }
-        }
-        .fileImporter(isPresented: $isChoosingBackupDestination, allowedContentTypes: [.folder]) { result in
-            if case .success(let folder) = result {
-                Task { await library.backUpGame(game, to: folder) }
-            }
-        }
-        .fileDialogMessage("Choose where to keep the backup of \(game.displayName), for example an external drive.")
-        .fileImporter(isPresented: $isChoosingExistingBackup, allowedContentTypes: [.folder]) { result in
-            if case .success(let folder) = result {
-                _ = library.useBackup(at: folder, for: game)
-            }
         }
     }
 
@@ -419,49 +387,28 @@ private struct GameFileModRow: View {
     }
 }
 
-/// Full game backup status and the bulk "start over" actions.
+/// The bulk "start over" actions.
 private struct MaintenanceCard: View {
     @Environment(ModLibrary.self) private var library
     let game: LEGame
-    let backUp: () -> Void
-    let restore: () -> Void
-    let findBackup: () -> Void
     let removeAll: () -> Void
     let rebuild: () -> Void
 
     var body: some View {
-        let backup = library.gameBackup(for: game)
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: "Maintenance", tint: .secondary)
             HStack(alignment: .top, spacing: 14) {
-                Image(systemName: backup == nil ? "externaldrive.badge.exclamationmark" : "externaldrive.badge.checkmark")
+                Image(systemName: "checkmark.shield")
                     .font(.title2)
-                    .foregroundStyle(backup == nil ? MEStyle.omniOrange : .green)
+                    .foregroundStyle(.green)
                     .frame(width: 38)
                 VStack(alignment: .leading, spacing: 4) {
-                    if let backup {
-                        Text("Backed up \(backup.created.formatted(date: .abbreviated, time: .shortened))").font(.headline)
-                        Text(backup.folder?.path ?? "")
-                            .font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
-                        Text(backup.modsInstalled == 0 ? "A clean backup with no mods." : "Includes \(backup.modsInstalled) mod folders that were installed at the time.")
-                            .font(.caption).foregroundStyle(.secondary)
-                    } else {
-                        Text("No full backup yet").font(.headline)
-                        Text("A full backup lets you put \(game.displayName) back exactly as it is now, whatever happens. For a clean one, back up before installing mods.")
-                            .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                        Button("I already have a backup…", action: findBackup)
-                            .buttonStyle(.link)
-                            .font(.caption)
-                    }
+                    Text("Original files are backed up automatically").font(.headline)
+                    Text("Before MELEMT changes one of \(game.displayName)'s own files, it keeps the original, so Rebuild Mods and Remove All Mods can always put it back. For a completely fresh copy of the game, use Verify Integrity of Game Files in Steam.")
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 8) {
-                    Button(backup == nil ? "Back Up Game…" : "Back Up Again…", systemImage: "externaldrive.badge.timemachine", action: backUp)
-                        .buttonStyle(.glass)
-                    if backup != nil {
-                        Button("Restore From Backup…", systemImage: "clock.arrow.circlepath", action: restore)
-                            .buttonStyle(.glass)
-                    }
                     Button("Rebuild Mods…", systemImage: "wrench.and.screwdriver", action: rebuild)
                         .buttonStyle(.glass)
                         .disabled(library.modCount(for: game) == 0)

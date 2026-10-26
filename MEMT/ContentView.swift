@@ -31,15 +31,13 @@ struct ContentView: View {
                 } detail: {
                     switch selection {
                     case .launch:
-                        LaunchView(selection: $selection)
+                        LaunchView()
                     case .game(let game):
                         GameView(game: game, isAddingMods: $isAddingMods, isChoosingGameFolder: $isChoosingGameFolder)
                     case .downloads:
                         DownloadsView(isAddingMods: $isAddingMods, isConnectingNexus: $isConnectingNexus)
                     case .settings:
                         SettingsView()
-                            .frame(maxWidth: 680)
-                            .frame(maxWidth: .infinity)
                             .navigationTitle("Settings")
                     case nil:
                         ContentUnavailableView("Choose a Game", systemImage: "gamecontroller")
