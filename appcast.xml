@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+    <channel>
+        <title>MELEMT</title>
+        <link>https://github.com/kfalencik/MELEMT</link>
+        <description>MELEMT updates</description>
+        <language>en</language>
+        <item>
+            <title>Version 1.0</title>
+            <pubDate>Mon, 26 Oct 2026 13:45:35 GMT</pubDate>
+            <sparkle:version>1</sparkle:version>
+            <sparkle:shortVersionString>1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>27.0</sparkle:minimumSystemVersion>
+            <sparkle:fullReleaseNotesLink>https://github.com/kfalencik/MELEMT/releases/tag/v1.0</sparkle:fullReleaseNotesLink>
+            <description><![CDATA[
+<h3>MELEMT 1.0</h3>
+<p>The first public release of MELEMT, a native Mac app for installing, managing and playing Mass Effect Legendary Edition mods.</p>
+<ul>
+<li>Installs ME3Tweaks Mod Manager mods: Custom DLC, base game files, merge mods, TLK, 2DA, Coalesced and PlotManager merges, and texture overrides</li>
+<li>Mod Manager Download links from Nexus Mods download and install straight into the app</li>
+<li>Drop mod archives (.7z, .zip, .rar) on the window, or save them to Downloads</li>
+<li>Sets each game up to load mods and backs up every original file it changes</li>
+<li>Starts all three games through Steam (NotProton) or CrossOver, and hides everything else while you play</li>
+<li>Launcher Mode for a clean window with just the games and their Play buttons</li>
+<li>Custom cover and banner artwork for each game</li>
+<li>Updates itself automatically</li>
+</ul>
+<p>Requires macOS 27 or later.</p>
+            ]]></description>
+            <enclosure url="https://github.com/kfalencik/MELEMT/releases/download/v1.0/MELEMT-1.0.zip" type="application/octet-stream" sparkle:edSignature="HhnQWzhDu28Ar8s79mGngKhw8sSkkU3aWITasR2UCNGQPuP9TCXyP6+HJveOfmVSLLXKGpGF6ZlgE1r5iuBjCQ==" length="53848310" />
+        </item>
+    </channel>
+</rss>
