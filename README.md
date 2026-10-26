@@ -52,9 +52,41 @@ Mass Effect Legendary Edition runs on a Mac through Steam with NotProton, or thr
 
 **Requirements**
 - macOS 26 (Tahoe) or later on an Apple silicon Mac
-- Mass Effect Legendary Edition from Steam, set up to run through NotProton or Steam in a [CrossOver](https://www.codeweavers.com/crossover) bottle
+- Mass Effect Legendary Edition from Steam, running through Steam + NotProton or Steam in a [CrossOver](https://www.codeweavers.com/crossover) bottle (see [Setting up the game](#setting-up-the-game) below)
 
 MELEMT is signed and notarized by Apple, so it opens without security warnings.
+
+## Setting up the game
+
+Mass Effect Legendary Edition is a Windows game, so it needs a compatibility layer to run on a Mac. Either of these setups works with MELEMT. Both need [CrossOver](https://www.codeweavers.com/crossover), which is paid software with a free trial.
+
+### Option 1: Steam for Mac + NotProton (recommended)
+
+[NotProton](https://github.com/NotProtonNot/NotProton) lets the normal Mac Steam app run Windows games, using CrossOver behind the scenes. You keep one Steam library, and the game installs like any other.
+
+1. Install **CrossOver 26.3** (or a CrossOver Preview build that NotProton supports; check [NotProton's page](https://github.com/NotProtonNot/NotProton) for the current list). You don't need to create a bottle.
+2. Install [Steam for Mac](https://store.steampowered.com/about/) and sign in.
+3. Install **NotProton** from its [releases page](https://github.com/NotProtonNot/NotProton/releases), or with Homebrew:
+   ```sh
+   brew install --cask notprotonnot/notproton/notproton
+   ```
+4. Open NotProton and follow its setup. From then on, open Steam through NotProton (MELEMT does this for you when you press Play).
+5. In Steam, go to **Settings ▸ Compatibility** and choose the CrossOver (Rosetta) compatibility tool as the default, as NotProton recommends.
+6. Install **Mass Effect Legendary Edition**. The default Steam library or a library on another drive both work, but the drive can't be NTFS-formatted (NotProton doesn't support NTFS).
+7. Start the game once from Steam. The EA app opens the first time; sign in with your EA account and let it link to Steam. Wait for the Legendary Edition launcher to appear, then quit.
+
+### Option 2: Steam inside a CrossOver bottle
+
+1. Install [CrossOver](https://www.codeweavers.com/crossover).
+2. In CrossOver, choose **Install a Windows Application**, search for **Steam**, and install it. CrossOver creates a bottle for it.
+3. Open Steam from that bottle, sign in, and install **Mass Effect Legendary Edition**. To use another drive, add a library in Steam's **Settings ▸ Storage**.
+4. Start the game once from Steam. The EA app opens the first time; sign in with your EA account and let it link to Steam. Wait for the Legendary Edition launcher to appear, then quit.
+
+### Then open MELEMT
+
+MELEMT looks for the game in Steam for Mac's libraries, Steam libraries at the top of any connected drive, and inside CrossOver bottles. If it doesn't find yours, choose the **Mass Effect Legendary Edition** folder yourself (the one that contains the `Game` folder).
+
+If you have both setups, choose which one starts the games in MELEMT's **Settings ▸ Playing ▸ Start games with**.
 
 ## How it works
 
