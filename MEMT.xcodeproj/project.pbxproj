@@ -143,7 +143,21 @@
 				"$(DERIVED_FILE_DIR)/LEModHelper.signed",
 			);
 			shellPath = /bin/sh;
-			shellScript = "# Xcode doesn't sign executables in Resources, so sign the helper here (before the app is signed)\n# with the Hardened Runtime and the entitlements .NET needs. Required for notarization.\nhelper=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/LEModHelper\"\nstamp=\"${DERIVED_FILE_DIR}/LEModHelper.signed\"\nif [ ! -f \"$helper\" ] || [ \"${CODE_SIGNING_ALLOWED}\" != \"YES\" ] || [ -z \"${EXPANDED_CODE_SIGN_IDENTITY}\" ]; then\n    touch \"$stamp\"\n    exit 0\nfi\nif [ \"${CONFIGURATION}\" = \"Release\" ]; then timestamp=\"--timestamp\"; else timestamp=\"--timestamp=none\"; fi\ncodesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --options runtime $timestamp \\\n    --entitlements \"${SRCROOT}/scripts/LEModHelper.entitlements\" \"$helper\"\ntouch \"$stamp\"\n";
+			shellScript = (
+				"# Xcode doesn't sign executables in Resources, so sign the helper here (before the app is signed)",
+				"# with the Hardened Runtime and the entitlements .NET needs. Required for notarization.",
+				"helper=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/LEModHelper\"",
+				"stamp=\"${DERIVED_FILE_DIR}/LEModHelper.signed\"",
+				"if [ ! -f \"$helper\" ] || [ \"${CODE_SIGNING_ALLOWED}\" != \"YES\" ] || [ -z \"${EXPANDED_CODE_SIGN_IDENTITY}\" ]; then",
+				"    touch \"$stamp\"",
+				"    exit 0",
+				"fi",
+				"if [ \"${CONFIGURATION}\" = \"Release\" ]; then timestamp=\"--timestamp\"; else timestamp=\"--timestamp=none\"; fi",
+				"codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --options runtime $timestamp \\",
+				"    --entitlements \"${SRCROOT}/scripts/LEModHelper.entitlements\" \"$helper\"",
+				"touch \"$stamp\"",
+				"",
+			);
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -292,12 +306,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 37KPZYVX63;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MEMT/Info.plist;
@@ -320,7 +334,8 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/MEMT/Helper",
 				);
-				MARKETING_VERSION = 1.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kfalencik.MELEMT;
 				PRODUCT_NAME = MELEMT;
 				REGISTER_APP_GROUPS = YES;
@@ -340,12 +355,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 37KPZYVX63;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MEMT/Info.plist;
@@ -368,7 +383,8 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/MEMT/Helper",
 				);
-				MARKETING_VERSION = 1.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kfalencik.MELEMT;
 				PRODUCT_NAME = MELEMT;
 				REGISTER_APP_GROUPS = YES;

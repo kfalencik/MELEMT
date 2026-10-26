@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/kfalencik/MELEMT/releases/latest"><img src="https://img.shields.io/github/v/release/kfalencik/MELEMT?label=download&color=c8102e" alt="Latest release"></a>
-  <img src="https://img.shields.io/badge/macOS-27%2B-1f2a44" alt="macOS 27 or later">
+  <img src="https://img.shields.io/badge/macOS-26%2B-1f2a44" alt="macOS 26 or later">
   <a href="LICENSE"><img src="https://img.shields.io/github/license/kfalencik/MELEMT?color=1f2a44" alt="GPL-3.0 license"></a>
 </p>
 
@@ -51,7 +51,7 @@ Mass Effect Legendary Edition runs on a Mac through Steam with NotProton, or thr
 4. Optional: connect your Nexus Mods account so **Mod Manager Download** buttons send mods straight to MELEMT.
 
 **Requirements**
-- macOS 27 or later
+- macOS 26 (Tahoe) or later on an Apple silicon Mac
 - Mass Effect Legendary Edition from Steam, set up to run through NotProton or Steam in a [CrossOver](https://www.codeweavers.com/crossover) bottle
 
 MELEMT is signed and notarized by Apple, so it opens without security warnings.
