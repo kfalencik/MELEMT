@@ -40,6 +40,7 @@ nonisolated enum LaunchMethod: Hashable, Sendable {
 nonisolated enum GameLauncher {
     static let preferredMethodKey = "launchMethod"
     static let skipLauncherKey = "skipLELauncher"
+    static let hideOtherAppsKey = "hideOtherAppsWhenPlaying"
     /// Steam app ID for Mass Effect Legendary Edition.
     private static let steamAppID = "1328670"
 
@@ -128,6 +129,24 @@ nonisolated enum GameLauncher {
                 throw LaunchError(message: "CrossOver couldn't start Steam in the \(bottle) bottle: \(error.localizedDescription)")
             }
         }
+    }
+
+    // MARK: Focus
+
+    /// Hides Steam, the EA app and (on the first pass) MELEMT, so only the game is on screen.
+    /// Windows programs running under Wine appear as their own Mac apps named after the .exe,
+    /// so those are matched by name. Nothing with "Mass Effect" in its name is touched.
+    @MainActor
+    static func hideAppsAroundGame(includingThisApp: Bool) {
+        let names = ["steam", "eadesktop", "ea app", "easteamproxy", "eabackgroundservice", "eaconnect", "origin"]
+        for app in NSWorkspace.shared.runningApplications where app != NSRunningApplication.current && !app.isHidden {
+            let name = (app.localizedName ?? app.executableURL?.lastPathComponent ?? "").lowercased()
+            guard !name.contains("mass effect"), !name.contains("masseffect") else { continue }
+            if app.bundleIdentifier == "com.valvesoftware.steam" || names.contains(where: { name.hasPrefix($0) }) {
+                app.hide()
+            }
+        }
+        if includingThisApp { NSApp.hide(nil) }
     }
 
     // MARK: NotProton

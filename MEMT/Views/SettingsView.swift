@@ -10,6 +10,7 @@ struct SettingsView: View {
     @AppStorage(DownloadManager.watchDownloadsKey) private var watchDownloads = true
     @AppStorage(GameLauncher.preferredMethodKey) private var launchMethod = ""
     @AppStorage(GameLauncher.skipLauncherKey) private var skipLauncher = true
+    @AppStorage(GameLauncher.hideOtherAppsKey) private var hideOtherApps = true
     @State private var isChoosingGameFolder = false
     @State private var isConnectingNexus = false
     @State private var handlesNexusLinks = NXMHandler.isDefault
@@ -72,6 +73,8 @@ struct SettingsView: View {
                 }
                 Toggle("Skip the Legendary Edition launcher", isOn: $skipLauncher)
                     .help("On: Play boots straight into the chosen game. Off: the Legendary Edition launcher opens and you pick the game there.")
+                Toggle("Hide Steam, the EA app and MELEMT when a game starts", isOn: $hideOtherApps)
+                    .help("Only the game stays on screen. Click MELEMT in the Dock to bring it back.")
             }
 
             Section {

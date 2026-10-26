@@ -151,6 +151,16 @@ final class ModLibrary {
         activity = "Starting \(game.displayName) through \(method.displayName)…"
         do {
             try await GameLauncher.launch(game, using: method, install: install, progress: progressHandler)
+            if UserDefaults.standard.object(forKey: GameLauncher.hideOtherAppsKey) as? Bool ?? true {
+                GameLauncher.hideAppsAroundGame(includingThisApp: true)
+                // The EA app often opens its windows a little after the game starts.
+                Task {
+                    for delay in [10, 25] {
+                        try? await Task.sleep(for: .seconds(delay))
+                        GameLauncher.hideAppsAroundGame(includingThisApp: false)
+                    }
+                }
+            }
             try? await Task.sleep(for: .seconds(3))
         } catch {
             errorMessage = error.localizedDescription

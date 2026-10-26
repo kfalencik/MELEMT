@@ -71,6 +71,7 @@
 				000000000000000120000000 /* Sources */,
 				000000000000000130000000 /* Frameworks */,
 				000000000000000140000000 /* Resources */,
+				5BA1E0010000000000000004 /* Sign LEModHelper */,
 			);
 			buildRules = (
 			);
@@ -129,6 +130,22 @@
 			);
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		5BA1E0010000000000000004 /* Sign LEModHelper */ = {
+			isa = PBXShellScriptBuildPhase;
+			inputPaths = (
+				"$(SRCROOT)/scripts/LEModHelper.entitlements",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/LEModHelper",
+			);
+			name = "Sign LEModHelper";
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/LEModHelper.signed",
+			);
+			shellPath = /bin/sh;
+			shellScript = "# Xcode doesn't sign executables in Resources, so sign the helper here (before the app is signed)\n# with the Hardened Runtime and the entitlements .NET needs. Required for notarization.\nhelper=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/LEModHelper\"\nstamp=\"${DERIVED_FILE_DIR}/LEModHelper.signed\"\nif [ ! -f \"$helper\" ] || [ \"${CODE_SIGNING_ALLOWED}\" != \"YES\" ] || [ -z \"${EXPANDED_CODE_SIGN_IDENTITY}\" ]; then\n    touch \"$stamp\"\n    exit 0\nfi\nif [ \"${CONFIGURATION}\" = \"Release\" ]; then timestamp=\"--timestamp\"; else timestamp=\"--timestamp=none\"; fi\ncodesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --options runtime $timestamp \\\n    --entitlements \"${SRCROOT}/scripts/LEModHelper.entitlements\" \"$helper\"\ntouch \"$stamp\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		000000000000000120000000 /* Sources */ = {
@@ -279,6 +296,7 @@
 				DEVELOPMENT_TEAM = 37KPZYVX63;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -326,6 +344,7 @@
 				DEVELOPMENT_TEAM = 37KPZYVX63;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
