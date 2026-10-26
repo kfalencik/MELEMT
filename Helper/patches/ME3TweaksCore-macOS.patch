@@ -1,0 +1,277 @@
+diff --git a/ME3TweaksCore/Config/M3CConfigMerge.cs b/ME3TweaksCore/Config/M3CConfigMerge.cs
+index f9181f2..e403902 100644
+--- a/ME3TweaksCore/Config/M3CConfigMerge.cs
++++ b/ME3TweaksCore/Config/M3CConfigMerge.cs
+@@ -29,7 +29,7 @@ namespace ME3TweaksCore.Config
+                 return; // Cannot asset merge
+             }
+ 
+-            var m3cds = Directory.GetFiles(cookedDir, @"*" + ConfigMerge.CONFIG_MERGE_EXTENSION,
++            var m3cds = LegendaryExplorerCore.GameFilesystem.MEDirectories.GetFilesOrdered(cookedDir, @"*" + ConfigMerge.CONFIG_MERGE_EXTENSION, // macOS helper: NTFS order
+                     SearchOption.TopDirectoryOnly)
+                 .Where(x => Path.GetFileName(x).StartsWith(ConfigMerge.CONFIG_MERGE_PREFIX))
+                 .ToList(); // Find CoalescedMerge-*.m3cd files
+diff --git a/ME3TweaksCore/GameFilesystem/MetaCMM.cs b/ME3TweaksCore/GameFilesystem/MetaCMM.cs
+index c33f82f..9549154 100644
+--- a/ME3TweaksCore/GameFilesystem/MetaCMM.cs
++++ b/ME3TweaksCore/GameFilesystem/MetaCMM.cs
+@@ -288,7 +288,16 @@ namespace ME3TweaksCore.GameFilesystem
+                         }
+                         else if (line.StartsWith(PrefixModDescFeatureLevel))
+                         {
+-                            ModDescFeatureLevel = ModFileFormats.NormalizeModescVersion(double.Parse(line.Substring(PrefixModDescFeatureLevel.Length)));
++                            // macOS helper: tolerate an empty/invalid value instead of throwing (and parse culture-independently).
++                            var parsedline = line.Substring(PrefixModDescFeatureLevel.Length);
++                            if (double.TryParse(parsedline, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var featureLevel))
++                            {
++                                ModDescFeatureLevel = ModFileFormats.NormalizeModescVersion(featureLevel);
++                            }
++                            else
++                            {
++                                MLog.Warning($@"Failed to read ModDescFeatureLevel: Invalid value: {parsedline}");
++                            }
+                         }
+                         break;
+                 }
+diff --git a/ME3TweaksCore/ME3Tweaks/M3Merge/Bio2DATable/Bio2DAMerge.cs b/ME3TweaksCore/ME3Tweaks/M3Merge/Bio2DATable/Bio2DAMerge.cs
+index 286ab1b..09d7bef 100644
+--- a/ME3TweaksCore/ME3Tweaks/M3Merge/Bio2DATable/Bio2DAMerge.cs
++++ b/ME3TweaksCore/ME3Tweaks/M3Merge/Bio2DATable/Bio2DAMerge.cs
+@@ -1,4 +1,4 @@
+-﻿using System;
++using System;
+ using System.Collections.Generic;
+ using System.Diagnostics;
+ using System.IO;
+@@ -184,8 +184,8 @@ namespace ME3TweaksCore.ME3Tweaks.M3Merge.Bio2DATable
+                 var dlcCookedPath = Path.Combine(target.GetDLCPath(), dlc, target.Game.CookedDirName());
+ 
+                 MLog.Information($@"Looking for {BIO2DA_MERGE_FILE_SUFFIX} files in {dlcCookedPath}");
+-                var m3das = Directory
+-                    .GetFiles(dlcCookedPath, $@"{dlc}-*" + BIO2DA_MERGE_FILE_SUFFIX, SearchOption.AllDirectories)
++                var m3das = LegendaryExplorerCore.GameFilesystem.MEDirectories // macOS helper: NTFS order
++                    .GetFilesOrdered(dlcCookedPath, $@"{dlc}-*" + BIO2DA_MERGE_FILE_SUFFIX, SearchOption.AllDirectories)
+                     .ToList(); // Find all M3DA files
+                 MLog.Information($@"Found {m3das.Count} m3da files to parse");
+ 
+@@ -213,6 +213,7 @@ namespace ME3TweaksCore.ME3Tweaks.M3Merge.Bio2DATable
+                     var record = CreateRecord(target, packageContainer, file, outStream, recordedMergesForFile, false, out var savedVanilla);
+                     if (!savedVanilla)
+                     {
++                        PackageSaver.BeforePackageSave?.Invoke(file.FilePath); // macOS helper: back up the original first
+                         outStream.WriteToFile(file.FilePath); // Save to disk
+                     }
+ 
+@@ -263,6 +264,7 @@ namespace ME3TweaksCore.ME3Tweaks.M3Merge.Bio2DATable
+                 savedVanilla = true;
+                 // If this file had not been saved with LECLData, it would be vanilla. We are going to truncate it here.
+                 finalPackageStream.SetLength(lecllessSize);
++                PackageSaver.BeforePackageSave?.Invoke(finalPackage.FilePath); // macOS helper: back up the original first
+                 finalPackageStream.WriteToFile(finalPackage.FilePath);
+                 return null;
+             }
+@@ -326,7 +328,7 @@ namespace ME3TweaksCore.ME3Tweaks.M3Merge.Bio2DATable
+ 
+             foreach (var obj in mergeObject)
+             {
+-                var destPackage = packageContainer.GetTargetPackage(Path.Combine(target.GetCookedPath(), obj.GamePackageFile));
++                var destPackage = packageContainer.GetTargetPackage(Path.Combine(target.GetCookedPath(), obj.GamePackageFile.Replace('\\', Path.DirectorySeparatorChar))); // macOS helper: Windows separators
+                 if (destPackage == null)
+                 {
+                     MLog.Error($@"Bio2DA merge 'packagefile' is invalid: {obj.GamePackageFile} - cannot merge into non-basegame/Bring Down The Sky 2DA files");
+@@ -345,7 +347,8 @@ namespace ME3TweaksCore.ME3Tweaks.M3Merge.Bio2DATable
+                     throw new Exception(LC.GetString(LC.string_interp_2damerge_couldNotFindTarget, obj.GamePackageFile));
+                 }
+ 
+-                var modPackagePath = Directory.GetFiles(dlcCookedPath, obj.ModPackageFile, SearchOption.AllDirectories).FirstOrDefault();
++                // macOS helper: mod authors write Windows separators; NTFS order for FirstOrDefault.
++                var modPackagePath = LegendaryExplorerCore.GameFilesystem.MEDirectories.GetFilesOrdered(dlcCookedPath, obj.ModPackageFile.Replace('\\', Path.DirectorySeparatorChar), SearchOption.AllDirectories).FirstOrDefault();
+                 if (modPackagePath == null)
+                 {
+                     MLog.Error($@"Bio2DA merge 'mergepackagefile' is invalid: {obj.ModPackageFile} - could not find in CookedPCConsole folder of mod");
+diff --git a/ME3TweaksCore/ME3Tweaks/M3Merge/Game2Email/ME2EmailMerge.cs b/ME3TweaksCore/ME3Tweaks/M3Merge/Game2Email/ME2EmailMerge.cs
+index 281257e..38f8025 100644
+--- a/ME3TweaksCore/ME3Tweaks/M3Merge/Game2Email/ME2EmailMerge.cs
++++ b/ME3TweaksCore/ME3Tweaks/M3Merge/Game2Email/ME2EmailMerge.cs
+@@ -172,7 +172,7 @@ namespace ME3TweaksCore.ME3Tweaks.M3Merge.Game2Email
+                 if (!Directory.Exists(dlcCookedPath))
+                     continue;
+ 
+-                var dlcFiles = Directory.GetFiles(dlcCookedPath, @"*", SearchOption.TopDirectoryOnly);
++                var dlcFiles = LegendaryExplorerCore.GameFilesystem.MEDirectories.GetFilesOrdered(dlcCookedPath, @"*", SearchOption.TopDirectoryOnly); // macOS helper: NTFS order
+                 var metacmm = mergeDLC.Target.GetMetaCMMForDLC(dlc);
+                 var manifestFiles = new List<string>();
+ 
+diff --git a/ME3TweaksCore/ME3Tweaks/M3Merge/GlobalShader/GlobalShaderMerge.cs b/ME3TweaksCore/ME3Tweaks/M3Merge/GlobalShader/GlobalShaderMerge.cs
+index 28a2b4d..95ee290 100644
+--- a/ME3TweaksCore/ME3Tweaks/M3Merge/GlobalShader/GlobalShaderMerge.cs
++++ b/ME3TweaksCore/ME3Tweaks/M3Merge/GlobalShader/GlobalShaderMerge.cs
+@@ -84,7 +84,7 @@ namespace ME3TweaksCore.ME3Tweaks.M3Merge.GlobalShader
+                 var dlcCookedPath = Path.Combine(target.GetDLCPath(), dlc, target.Game.CookedDirName());
+ 
+                 MLog.Debug($@"Looking for {SHADER_MERGE_PATTERN} files in {dlcCookedPath}", log);
+-                var globalShaders = Directory.GetFiles(dlcCookedPath, GlobalShaderMerge.SHADER_MERGE_PATTERN, SearchOption.TopDirectoryOnly)
++                var globalShaders = LegendaryExplorerCore.GameFilesystem.MEDirectories.GetFilesOrdered(dlcCookedPath, GlobalShaderMerge.SHADER_MERGE_PATTERN, SearchOption.TopDirectoryOnly) // macOS helper: NTFS order
+                     .ToList();
+                 if (globalShaders.Count > 0)
+                 {
+diff --git a/ME3TweaksCore/ME3Tweaks/M3Merge/LE1Config/LE1ConfigMerge.cs b/ME3TweaksCore/ME3Tweaks/M3Merge/LE1Config/LE1ConfigMerge.cs
+index 3100689..b64ca94 100644
+--- a/ME3TweaksCore/ME3Tweaks/M3Merge/LE1Config/LE1ConfigMerge.cs
++++ b/ME3TweaksCore/ME3Tweaks/M3Merge/LE1Config/LE1ConfigMerge.cs
+@@ -52,7 +52,7 @@ namespace ME3TweaksCore.ME3Tweaks.M3Merge.LE1Config
+                 var dlcCookedPath = Path.Combine(target.GetDLCPath(), dlc, target.Game.CookedDirName());
+ 
+                 MLog.Information($@"Looking for ConfigDelta-*.m3cd files in {dlcCookedPath}", log);
+-                var m3cds = Directory.GetFiles(dlcCookedPath, @"*" + ConfigMerge.CONFIG_MERGE_EXTENSION, SearchOption.TopDirectoryOnly)
++                var m3cds = LegendaryExplorerCore.GameFilesystem.MEDirectories.GetFilesOrdered(dlcCookedPath, @"*" + ConfigMerge.CONFIG_MERGE_EXTENSION, SearchOption.TopDirectoryOnly) // macOS helper: NTFS order
+                     .Where(x => Path.GetFileName(x).StartsWith(ConfigMerge.CONFIG_MERGE_PREFIX)).ToList(); // Find CoalescedMerge-*.m3cd files
+                 MLog.Information($@"Found {m3cds.Count} m3cd files to apply", log);
+ 
+diff --git a/ME3TweaksCore/ME3Tweaks/M3Merge/PlotManager/PlotManagerMerge.cs b/ME3TweaksCore/ME3Tweaks/M3Merge/PlotManager/PlotManagerMerge.cs
+index ba9ace1..ab47fa3 100644
+--- a/ME3TweaksCore/ME3Tweaks/M3Merge/PlotManager/PlotManagerMerge.cs
++++ b/ME3TweaksCore/ME3Tweaks/M3Merge/PlotManager/PlotManagerMerge.cs
+@@ -90,7 +90,7 @@ namespace ME3TweaksCore.ME3Tweaks.M3Merge.PlotManager
+                 if (!Directory.Exists(dlcCookedPath))
+                     continue;
+ 
+-                var dlcFiles = Directory.GetFiles(dlcCookedPath, @"*", SearchOption.TopDirectoryOnly);
++                var dlcFiles = LegendaryExplorerCore.GameFilesystem.MEDirectories.GetFilesOrdered(dlcCookedPath, @"*", SearchOption.TopDirectoryOnly); // macOS helper: NTFS order
+                 var metacmm = target.GetMetaCMMForDLC(dlc);
+                 var manifestFiles = new List<string>();
+ 
+diff --git a/ME3TweaksCore/ME3Tweaks/M3Merge/Squadmate/SQMOutfitMerge.cs b/ME3TweaksCore/ME3Tweaks/M3Merge/Squadmate/SQMOutfitMerge.cs
+index 06eb24a..fdf8009 100644
+--- a/ME3TweaksCore/ME3Tweaks/M3Merge/Squadmate/SQMOutfitMerge.cs
++++ b/ME3TweaksCore/ME3Tweaks/M3Merge/Squadmate/SQMOutfitMerge.cs
+@@ -203,7 +203,7 @@ namespace ME3TweaksCore.ME3Tweaks.M3Merge
+                 }
+ 
+                 var dlcCookedPath = Path.Combine(mergeDLC.Target.GetDLCPath(), dlc, mergeDLC.Target.Game.CookedDirName());
+-                var dlcFiles = Directory.GetFiles(dlcCookedPath, @"*", SearchOption.TopDirectoryOnly);
++                var dlcFiles = LegendaryExplorerCore.GameFilesystem.MEDirectories.GetFilesOrdered(dlcCookedPath, @"*", SearchOption.TopDirectoryOnly); // macOS helper: NTFS order
+                 var metacmm = mergeDLC.Target.GetMetaCMMForDLC(dlc);
+                 var manifestFiles = new List<string>();
+ 
+diff --git a/ME3TweaksCore/Services/VanillaDatabaseService.cs b/ME3TweaksCore/Services/VanillaDatabaseService.cs
+index d3abbac..d9b3354 100644
+--- a/ME3TweaksCore/Services/VanillaDatabaseService.cs
++++ b/ME3TweaksCore/Services/VanillaDatabaseService.cs
+@@ -318,6 +318,7 @@ namespace ME3TweaksCore.Services
+ 
+         public static bool IsFileVanilla(MEGame game, string fullpath, string relativepath, bool isME1Polish, bool md5check = false)
+         {
++            relativepath = relativepath?.Replace('/', '\\'); // macOS helper: database keys use Windows separators
+             if (game.IsLEGame() && relativepath.StartsWith(@"BioGame\Config\", StringComparison.OrdinalIgnoreCase))
+                 return true; // Don't consider these as modified, they differ per user
+             var database = LoadDatabaseFor(game, isME1Polish);
+@@ -348,6 +349,7 @@ namespace ME3TweaksCore.Services
+ 
+         public static bool IsFileVanilla(MEGame game, string relativepath, bool isME1Polish, int fileSize, string md5 = null)
+         {
++            relativepath = relativepath?.Replace('/', '\\'); // macOS helper: database keys use Windows separators
+             if (game.IsLEGame() && relativepath.StartsWith(@"BioGame\Config\", StringComparison.OrdinalIgnoreCase))
+                 return true; // Don't consider these as modified, they differ per user
+             var database = LoadDatabaseFor(game, isME1Polish);
+@@ -374,6 +376,7 @@ namespace ME3TweaksCore.Services
+ 
+         public static bool IsFileVanilla(MEGame game, FileInfo finfo, string relativepath, bool isME1Polish, bool md5check = false, string md5 = null)
+         {
++            relativepath = relativepath?.Replace('/', '\\'); // macOS helper: database keys use Windows separators
+             if (game.IsLEGame() && relativepath.StartsWith(@"BioGame\Config\", StringComparison.OrdinalIgnoreCase))
+                 return true; // Don't consider these as modified, they differ per user
+             var database = LoadDatabaseFor(game, isME1Polish);
+@@ -477,7 +480,7 @@ namespace ME3TweaksCore.Services
+                         }
+                     }
+ 
+-                    var shortname = file.FullName.Substring(target.TargetPath.Length + 1);
++                    var shortname = file.FullName.Substring(target.TargetPath.Length + 1).Replace('/', '\\'); // macOS helper: database keys use Windows separators
+                     if (vanillaDB.TryGetValue(shortname, out var fileInfo))
+                     {
+                         if (file.Extension != @".sfar")
+@@ -631,7 +634,7 @@ namespace ME3TweaksCore.Services
+                 default:
+                     throw new Exception(@"Cannot vanilla check against game that is not ME1/ME2/ME3");
+             }
+-            if (vanillaDB.TryGetValue(relativeFilepath, out var info))
++            if (vanillaDB.TryGetValue(relativeFilepath?.Replace('/', '\\'), out var info)) // macOS helper: database keys use Windows separators
+             {
+                 return info;
+             }
+diff --git a/ME3TweaksCore/Targets/GameTarget.cs b/ME3TweaksCore/Targets/GameTarget.cs
+index 90bf59b..b79c823 100644
+--- a/ME3TweaksCore/Targets/GameTarget.cs
++++ b/ME3TweaksCore/Targets/GameTarget.cs
+@@ -1,4 +1,4 @@
+-﻿using System;
++using System;
+ using System.Collections.Generic;
+ using System.ComponentModel;
+ using System.Diagnostics;
+@@ -1061,7 +1061,7 @@ namespace ME3TweaksCore.Targets
+             var dlcDirectory = M3Directories.GetDLCPath(this);
+             if (Directory.Exists(dlcDirectory))
+             {
+-                return Directory.GetDirectories(dlcDirectory).Where(x => Path.GetFileName(x).StartsWith(@"DLC_") || (includeDisabled && Path.GetFileName(x).StartsWith(@"xDLC_"))).Select(x => Path.GetFileName(x)).ToList();
++                return MEDirectories.GetDirectoriesOrdered(dlcDirectory).Where(x => Path.GetFileName(x).StartsWith(@"DLC_") || (includeDisabled && Path.GetFileName(x).StartsWith(@"xDLC_"))).Select(x => Path.GetFileName(x)).ToList(); // macOS helper: NTFS order
+             }
+ 
+             return new List<string>();
+diff --git a/ME3TweaksCore/TextureOverride/M3CTextureOverrideMerge.cs b/ME3TweaksCore/TextureOverride/M3CTextureOverrideMerge.cs
+index e29d518..d089cfa 100644
+--- a/ME3TweaksCore/TextureOverride/M3CTextureOverrideMerge.cs
++++ b/ME3TweaksCore/TextureOverride/M3CTextureOverrideMerge.cs
+@@ -64,7 +64,7 @@ namespace ME3TweaksCore.TextureOverride
+                 return null; // Cannot merge, just ignore this folder
+             }
+ 
+-            var m3tos = Directory.GetFiles(cookedDir, @"*" + TextureOverrideManifest.EXTENSION_TEXTURE_OVERRIDE_MANIFEST, SearchOption.TopDirectoryOnly);
++            var m3tos = LegendaryExplorerCore.GameFilesystem.MEDirectories.GetFilesOrdered(cookedDir, @"*" + TextureOverrideManifest.EXTENSION_TEXTURE_OVERRIDE_MANIFEST, SearchOption.TopDirectoryOnly); // macOS helper: NTFS order
+             var matchingOverrides = m3tos.Where(x => Path.GetFileName(x).StartsWith(TextureOverrideManifest.PREFIX_TEXTURE_OVERRIDE_MANIFEST))
+                 .ToList(); // Find TextureOverride-*.m3to files
+ 
+diff --git a/ME3TweaksCore/TextureOverride/TextureOverrideCompiler.cs b/ME3TweaksCore/TextureOverride/TextureOverrideCompiler.cs
+index f35b161..0ceba62 100644
+--- a/ME3TweaksCore/TextureOverride/TextureOverrideCompiler.cs
++++ b/ME3TweaksCore/TextureOverride/TextureOverrideCompiler.cs
+@@ -136,10 +136,12 @@ namespace ME3TweaksCore.TextureOverride
+                 var btpEntry = BTP.TextureOverrides[done];
+                 var texture = tom.Textures[done];
+ 
+-                if (currentSourcePackage == null || !currentSourcePackage.FilePath.EndsWith(texture.CompilingSourcePackage, StringComparison.OrdinalIgnoreCase))
++                // macOS helper: mod authors write Windows separators.
++                var compilingSourcePackage = texture.CompilingSourcePackage.Replace('\\', Path.DirectorySeparatorChar);
++                if (currentSourcePackage == null || !currentSourcePackage.FilePath.EndsWith(compilingSourcePackage, StringComparison.OrdinalIgnoreCase))
+                 {
+                     // Load new source package
+-                    var newPath = Path.Combine(sourceFolder, texture.CompilingSourcePackage);
++                    var newPath = Path.Combine(sourceFolder, compilingSourcePackage);
+                     if (!File.Exists(newPath))
+                     {
+                         MLog.Error($@"Referenced source package {newPath} not found at {newPath} - aborting BTP build");
+@@ -285,7 +287,9 @@ namespace ME3TweaksCore.TextureOverride
+                     {
+                         InDataSize += sourceMip.Mip.Length; // Stats
+                         var area = sourceMip.SizeX * sourceMip.SizeY;
+-                        if (area >= TextureOverrideTextureEntry.BTP_COMPRESS_SIZE_MIN)
++                        // macOS helper: no Oodle compressor there, so mips are stored uncompressed in the BTP
++                        // (the BTP format supports uncompressed mips; they are just larger).
++                        if (area >= TextureOverrideTextureEntry.BTP_COMPRESS_SIZE_MIN && !LegendaryExplorerCore.Packages.PackageSaver.NeverCompress)
+                         {
+                             sourceMip.StorageType = StorageTypes.pccOodle;
+                             sourceMip.Mip = OodleHelper.Compress(sourceMip.Mip); // compress mip and store it back
+diff --git a/ME3TweaksCore/TextureOverride/TextureOverrideManifest.cs b/ME3TweaksCore/TextureOverride/TextureOverrideManifest.cs
+index aedb8c6..e2e0328 100644
+--- a/ME3TweaksCore/TextureOverride/TextureOverrideManifest.cs
++++ b/ME3TweaksCore/TextureOverride/TextureOverrideManifest.cs
+@@ -120,7 +120,7 @@ namespace ME3TweaksCore.TextureOverride
+ 
+             foreach (var entry in Textures)
+             {
+-                var fileName = Path.GetFileName(entry.CompilingSourcePackage);
++                var fileName = Path.GetFileName(entry.CompilingSourcePackage?.Replace('\\', Path.DirectorySeparatorChar)); // macOS helper: Windows separators
+                 if (!fileName.StartsWith(@"TO_"))
+                 {
+                     MLog.Error($@"Texture Override manifest {filePath} has invalid source package name: {fileName} - files MUST start with 'TO_', skipping this file.");

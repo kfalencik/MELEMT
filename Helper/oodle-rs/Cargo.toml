@@ -1,0 +1,17 @@
+[package]
+name = "oodle_shim"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "oodle_shim"
+crate-type = ["cdylib"]
+
+[dependencies]
+oozextract = { path = "../external/oozextract", default-features = false }
+
+[profile.release]
+opt-level = 3
+lto = true
+panic = "abort"

@@ -1,0 +1,19 @@
+[package]
+name = "compression_wrappers"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+# LegendaryExplorerCore P/Invokes "CompressionWrappers.dll"; the helper maps that name to this dylib.
+name = "CompressionWrappers"
+crate-type = ["cdylib"]
+
+[dependencies]
+lzma-rs = "0.3"
+flate2 = "1"
+
+[profile.release]
+opt-level = 3
+lto = true
+panic = "abort"

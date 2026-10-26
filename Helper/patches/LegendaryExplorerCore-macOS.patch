@@ -1,0 +1,513 @@
+diff --git a/LegendaryExplorer/LegendaryExplorerCore/Coalesced/CoalesceAsset.cs b/LegendaryExplorer/LegendaryExplorerCore/Coalesced/CoalesceAsset.cs
+index debea63..cd04157 100644
+--- a/LegendaryExplorer/LegendaryExplorerCore/Coalesced/CoalesceAsset.cs
++++ b/LegendaryExplorer/LegendaryExplorerCore/Coalesced/CoalesceAsset.cs
+@@ -1,4 +1,4 @@
+-﻿using System;
++using System;
+ using System.Diagnostics;
+ using System.IO;
+ using System.Linq;
+@@ -190,14 +190,14 @@ namespace LegendaryExplorerCore.Coalesced
+ 		/// <returns></returns>
+ 		public string ToXmlString()
+         {
+-			var fileId = Path.GetFileNameWithoutExtension(Name);
++			var fileId = Path.GetFileNameWithoutExtension(Name?.Replace('\\', '/'));
+ 			fileId = CoalescedConverter.ProperNames.FirstOrDefault(s => s.Equals(fileId, StringComparison.InvariantCultureIgnoreCase));
+ 
+ 			var xDoc = new XDocument();
+ 
+ 			var rootElement = new XElement("CoalesceAsset");
+ 			rootElement.SetAttributeValue("id", fileId);
+-			rootElement.SetAttributeValue("name", Path.GetFileName(Name));
++			rootElement.SetAttributeValue("name", Path.GetFileName(Name?.Replace('\\', '/')));
+ 			rootElement.SetAttributeValue("source", Source);
+ 
+ 			var sectionsElement = new XElement("Sections");
+diff --git a/LegendaryExplorer/LegendaryExplorerCore/Coalesced/CoalescedConverter.cs b/LegendaryExplorer/LegendaryExplorerCore/Coalesced/CoalescedConverter.cs
+index 44232b1..31f482b 100644
+--- a/LegendaryExplorer/LegendaryExplorerCore/Coalesced/CoalescedConverter.cs
++++ b/LegendaryExplorer/LegendaryExplorerCore/Coalesced/CoalescedConverter.cs
+@@ -1,4 +1,4 @@
+-﻿using System;
++using System;
+ using System.Collections.Generic;
+ using System.ComponentModel;
+ using System.Diagnostics;
+@@ -95,14 +95,14 @@ namespace LegendaryExplorerCore.Coalesced
+ 
+             foreach (var file in coal.Files)
+             {
+-                var fileId = Path.GetFileNameWithoutExtension(file.Name);
++                var fileId = Path.GetFileNameWithoutExtension(file.Name?.Replace('\\', '/'));
+                 fileId = ProperNames.FirstOrDefault(s => s.Equals(fileId, StringComparison.InvariantCultureIgnoreCase));
+ 
+                 xDoc = new XDocument();
+ 
+                 rootElement = new XElement("CoalesceAsset");
+                 rootElement.SetAttributeValue("id", fileId);
+-                rootElement.SetAttributeValue("name", Path.GetFileName(file.Name));
++                rootElement.SetAttributeValue("name", Path.GetFileName(file.Name?.Replace('\\', '/')));
+                 rootElement.SetAttributeValue("source", file.Name);
+ 
+                 var sectionsElement = new XElement("Sections");
+@@ -318,8 +318,8 @@ namespace LegendaryExplorerCore.Coalesced
+                 var coal = new CoalescedFileXml();
+                 coal.Deserialize(input);
+ 
+-                var inputId = Path.GetFileNameWithoutExtension(sourcePath) ?? "Coalesced";
+-                var inputName = Path.GetFileName(sourcePath) ?? "Coalesced.bin";
++                var inputId = Path.GetFileNameWithoutExtension(sourcePath?.Replace('\\', '/')) ?? "Coalesced";
++                var inputName = Path.GetFileName(sourcePath?.Replace('\\', '/')) ?? "Coalesced.bin";
+ 
+                 List<string> OutputFileNames = new List<string>();
+ 
+@@ -333,18 +333,18 @@ namespace LegendaryExplorerCore.Coalesced
+ 
+                 foreach (var file in coal.Files)
+                 {
+-                    var fileId = Path.GetFileNameWithoutExtension(file.Name);
++                    var fileId = Path.GetFileNameWithoutExtension(file.Name?.Replace('\\', '/'));
+                     fileId = ProperNames.FirstOrDefault(s => s.Equals(fileId, StringComparison.InvariantCultureIgnoreCase)) ?? fileId;
+ 
+                     var iniPath = $"{destinationPath}/{fileId}.xml";
+ 
+-                    OutputFileNames.Add(Path.GetFileName(iniPath));
++                    OutputFileNames.Add(Path.GetFileName(iniPath?.Replace('\\', '/')));
+ 
+                     xDoc = new XDocument();
+ 
+                     rootElement = new XElement("CoalesceAsset");
+                     rootElement.SetAttributeValue("id", fileId);
+-                    rootElement.SetAttributeValue("name", Path.GetFileName(file.Name));
++                    rootElement.SetAttributeValue("name", Path.GetFileName(file.Name?.Replace('\\', '/')));
+                     rootElement.SetAttributeValue("source", file.Name);
+ 
+                     var sectionsElement = new XElement("Sections");
+@@ -698,7 +698,7 @@ namespace LegendaryExplorerCore.Coalesced
+             {
+                 if (stripExtensions)
+                 {
+-                    assets[Path.GetFileNameWithoutExtension(decomp.Key)] = ConfigFileProxy.ParseIni(decomp.Value.ToString()); // Technically this is extra work as we parsed from data -> DuplicatingIni -> string data -> Coalesced asset. This may be able to be improved by directly loading from data, but that would require a lot of API changes
++                    assets[Path.GetFileNameWithoutExtension(decomp.Key?.Replace('\\', '/'))] = ConfigFileProxy.ParseIni(decomp.Value.ToString()); // Technically this is extra work as we parsed from data -> DuplicatingIni -> string data -> Coalesced asset. This may be able to be improved by directly loading from data, but that would require a lot of API changes
+                 }
+                 else
+                 {
+@@ -718,7 +718,7 @@ namespace LegendaryExplorerCore.Coalesced
+         public static CaseInsensitiveDictionary<CoalesceAsset> DecompileGame3ToAssets(string filePath, bool stripExtensions = false)
+         {
+             using var f = File.OpenRead(filePath);
+-            return DecompileGame3ToAssets(f, Path.GetFileName(filePath), stripExtensions: stripExtensions);
++            return DecompileGame3ToAssets(f, Path.GetFileName(filePath?.Replace('\\', '/')), stripExtensions: stripExtensions);
+         }
+ 
+         /// <summary>
+@@ -736,7 +736,7 @@ namespace LegendaryExplorerCore.Coalesced
+             {
+                 if (stripExtensions)
+                 {
+-                    assets[Path.GetFileNameWithoutExtension(decomp.Key)] = XmlCoalesceAsset.LoadFromMemory(decomp.Value);
++                    assets[Path.GetFileNameWithoutExtension(decomp.Key?.Replace('\\', '/'))] = XmlCoalesceAsset.LoadFromMemory(decomp.Value);
+                 }
+                 else
+                 {
+diff --git a/LegendaryExplorer/LegendaryExplorerCore/Coalesced/Config/ConfigAssetBundle.cs b/LegendaryExplorer/LegendaryExplorerCore/Coalesced/Config/ConfigAssetBundle.cs
+index e8ffcd6..361c9be 100644
+--- a/LegendaryExplorer/LegendaryExplorerCore/Coalesced/Config/ConfigAssetBundle.cs
++++ b/LegendaryExplorer/LegendaryExplorerCore/Coalesced/Config/ConfigAssetBundle.cs
+@@ -1,4 +1,4 @@
+-﻿using System;
++using System;
+ using System.Collections.Generic;
+ using System.Diagnostics;
+ using System.IO;
+@@ -96,7 +96,7 @@ namespace LegendaryExplorerCore.Coalesced.Config
+         public static ConfigAssetBundle FromSingleFile(MEGame game, string singleFile)
+         {
+             using var stream = File.OpenRead(singleFile);
+-            return new ConfigAssetBundle(game, stream, Path.GetFileName(singleFile));
++            return new ConfigAssetBundle(game, stream, Path.GetFileName(singleFile?.Replace('\\', '/')));
+         }
+ 
+         /// <summary>
+@@ -138,9 +138,9 @@ namespace LegendaryExplorerCore.Coalesced.Config
+             if (game == MEGame.LE1)
+             {
+                 // Load any M3CD files and merge them together to produce the final results DLC configuration bundle.
+-                var m3cds = Directory.GetFiles(cookedDir, @"*" + ConfigMerge.CONFIG_MERGE_EXTENSION,
++                var m3cds = GameFilesystem.MEDirectories.GetFilesOrdered(cookedDir, @"*" + ConfigMerge.CONFIG_MERGE_EXTENSION, // macOS helper: NTFS order
+                         SearchOption.TopDirectoryOnly)
+-                    .Where(x => Path.GetFileName(x).StartsWith(ConfigMerge.CONFIG_MERGE_PREFIX))
++                    .Where(x => Path.GetFileName(x?.Replace('\\', '/')).StartsWith(ConfigMerge.CONFIG_MERGE_PREFIX))
+                     .ToList(); // Find CoalescedMerge-*.m3cd files
+ 
+                 foreach (var m3cd in m3cds)
+@@ -152,10 +152,10 @@ namespace LegendaryExplorerCore.Coalesced.Config
+             }
+             else if (game.IsGame2())
+             {
+-                var iniFiles = Directory.GetFiles(cookedDir, @"*.ini", SearchOption.TopDirectoryOnly);
++                var iniFiles = GameFilesystem.MEDirectories.GetFilesOrdered(cookedDir, @"*.ini", SearchOption.TopDirectoryOnly); // macOS helper: NTFS order
+                 foreach (var ini in iniFiles)
+                 {
+-                    var fname = Path.GetFileNameWithoutExtension(ini);
++                    var fname = Path.GetFileNameWithoutExtension(ini?.Replace('\\', '/'));
+                     if (!CoalescedConverter.ProperNames.Contains(fname, StringComparer.OrdinalIgnoreCase))
+                         continue; // Not supported. localization files are only supported in the main single file.
+                     Assets[fname] = ConfigFileProxy.LoadIni(ini);
+@@ -181,7 +181,7 @@ namespace LegendaryExplorerCore.Coalesced.Config
+ 
+         public CoalesceAsset GetAsset(string assetName, bool createIfNotFound = true)
+         {
+-            var asset = Path.GetFileNameWithoutExtension(assetName);
++            var asset = Path.GetFileNameWithoutExtension(assetName?.Replace('\\', '/'));
+             if (Assets.TryGetValue(asset, out var result))
+                 return result;
+ 
+@@ -240,7 +240,7 @@ namespace LegendaryExplorerCore.Coalesced.Config
+             {
+                 foreach (var v in Assets)
+                 {
+-                    var outFile = Path.Combine(outPath ?? CookedDir, Path.GetFileNameWithoutExtension(v.Key) + @".ini");
++                    var outFile = Path.Combine(outPath ?? CookedDir, Path.GetFileNameWithoutExtension(v.Key?.Replace('\\', '/')) + @".ini");
+                     File.WriteAllText(outFile, v.Value.GetGame2IniText());
+                 }
+                 HasChanges = false;
+diff --git a/LegendaryExplorer/LegendaryExplorerCore/Coalesced/LECoalesced.cs b/LegendaryExplorer/LegendaryExplorerCore/Coalesced/LECoalesced.cs
+index b6fc07e..4dd1ec0 100644
+--- a/LegendaryExplorer/LegendaryExplorerCore/Coalesced/LECoalesced.cs
++++ b/LegendaryExplorer/LegendaryExplorerCore/Coalesced/LECoalesced.cs
+@@ -1,4 +1,4 @@
+-﻿using System;
++using System;
+ using System.Collections.Generic;
+ using System.Diagnostics;
+ using System.IO;
+@@ -128,7 +128,7 @@ namespace LegendaryExplorerCore.Coalesced
+             {
+                 var iniFullName = reader.ReadCoalescedString();
+                 var sectionCount = reader.ReadInt32();
+-                bundle.Files[Path.GetFileName(iniFullName)] = ReadCoalescedIni(reader, sectionCount);
++                bundle.Files[Path.GetFileName(iniFullName?.Replace('\\', '/'))] = ReadCoalescedIni(reader, sectionCount);
+             }
+ 
+             return bundle;
+@@ -235,7 +235,7 @@ namespace LegendaryExplorerCore.Coalesced
+                 {
+                     ini.Sections.Add(currentSection);
+                 }
+-                bundle.Files[Path.GetFileName(relativePath)] = ini;
++                bundle.Files[Path.GetFileName(relativePath?.Replace('\\', '/'))] = ini;
+             }
+ 
+             return bundle;
+@@ -341,8 +341,10 @@ namespace LegendaryExplorerCore.Coalesced
+ 
+         private string GetIniFullPath(string filename, MELocalization localization)
+         {
+-            var extension = Path.GetExtension(filename).ToLower();
+-            var fNameNoExt = Path.GetFileNameWithoutExtension(filename); // strip this off to ensure we don't double them up
++            // Coalesced filenames are Windows paths; normalize separators so this also works on macOS/Linux.
++            var portableName = filename.Replace('\\', '/');
++            var extension = Path.GetExtension(portableName?.Replace('\\', '/')).ToLower();
++            var fNameNoExt = Path.GetFileNameWithoutExtension(portableName?.Replace('\\', '/')); // strip this off to ensure we don't double them up
+             switch (extension)
+             {
+                 case ".int":
+@@ -374,7 +376,7 @@ namespace LegendaryExplorerCore.Coalesced
+         /// <param name="toDir"></param>
+         public static void Unpack(string fromFile, string toDir)
+         {
+-            var bundle = LECoalescedBundle.ReadFromFile(Path.GetFileName(fromFile), fromFile);
++            var bundle = LECoalescedBundle.ReadFromFile(Path.GetFileName(fromFile?.Replace('\\', '/')), fromFile);
+             bundle.WriteToDirectory(toDir);
+         }
+ 
+diff --git a/LegendaryExplorer/LegendaryExplorerCore/Coalesced/Xml/XmlCoalesceAsset.cs b/LegendaryExplorer/LegendaryExplorerCore/Coalesced/Xml/XmlCoalesceAsset.cs
+index fcdd214..f7e436b 100644
+--- a/LegendaryExplorer/LegendaryExplorerCore/Coalesced/Xml/XmlCoalesceAsset.cs
++++ b/LegendaryExplorer/LegendaryExplorerCore/Coalesced/Xml/XmlCoalesceAsset.cs
+@@ -1,4 +1,4 @@
+-﻿using System;
++using System;
+ using System.Collections.Generic;
+ using System.IO;
+ using System.Linq;
+@@ -79,7 +79,7 @@ namespace LegendaryExplorerCore.Coalesced.Xml
+             }
+             catch (XmlException e)
+             {
+-                throw new XmlException($"{Path.GetFileName(sourcePath)}: {e.Message}", e, e.LineNumber, e.LinePosition);
++                throw new XmlException($"{Path.GetFileName(sourcePath?.Replace('\\', '/'))}: {e.Message}", e, e.LineNumber, e.LinePosition);
+             }
+ 
+ 			var root = doc.Root;
+diff --git a/LegendaryExplorer/LegendaryExplorerCore/Compression/OodleHelper.cs b/LegendaryExplorer/LegendaryExplorerCore/Compression/OodleHelper.cs
+index b9cc39d..33154ab 100644
+--- a/LegendaryExplorer/LegendaryExplorerCore/Compression/OodleHelper.cs
++++ b/LegendaryExplorer/LegendaryExplorerCore/Compression/OodleHelper.cs
+@@ -219,6 +219,12 @@ namespace LegendaryExplorerCore.Compression
+                                                        0, 0, 0, 0, 0);
+                 }
+             }
++            // macOS helper: the bundled Oodle shim can only decompress (its compressor returns 0). Fail loudly
++            // instead of letting callers write empty "compressed" data.
++            if (compressedCount <= 0 && inputBuffer.Length > 0)
++            {
++                throw new NotSupportedException("Oodle compression is not available on this platform.");
++            }
+             return compressedCount;
+         }
+ 
+diff --git a/LegendaryExplorer/LegendaryExplorerCore/GameFilesystem/MEDirectories.cs b/LegendaryExplorer/LegendaryExplorerCore/GameFilesystem/MEDirectories.cs
+index 98fdb3d..b0d4127 100644
+--- a/LegendaryExplorer/LegendaryExplorerCore/GameFilesystem/MEDirectories.cs
++++ b/LegendaryExplorer/LegendaryExplorerCore/GameFilesystem/MEDirectories.cs
+@@ -563,5 +563,44 @@ namespace LegendaryExplorerCore.GameFilesystem
+                 _ => throw new ArgumentOutOfRangeException(nameof(game), game, null),
+             };
+         }
++
++        // macOS helper: NTFS returns directory listings in (case-insensitive) alphabetical order, so
++        // Windows code silently depends on that order. APFS does not guarantee it. These return the
++        // same order .NET produces on NTFS: each directory's entries sorted, subdirectories visited
++        // breadth-first (FileSystemEnumerator queues subdirectories).
++
++        /// <summary>Directory.GetFiles with NTFS (Windows) ordering.</summary>
++        public static string[] GetFilesOrdered(string path, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly)
++        {
++            // Like Directory.GetFiles, a directory part in the pattern ("sub\*.pcc") is relative to path.
++            searchPattern = searchPattern.Replace('\\', Path.DirectorySeparatorChar);
++            var patternDirectory = Path.GetDirectoryName(searchPattern);
++            if (!string.IsNullOrEmpty(patternDirectory))
++            {
++                path = Path.Combine(path, patternDirectory);
++                searchPattern = Path.GetFileName(searchPattern);
++            }
++            if (searchOption == SearchOption.TopDirectoryOnly)
++            {
++                return Directory.GetFiles(path, searchPattern, SearchOption.TopDirectoryOnly).OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToArray();
++            }
++            var result = new List<string>();
++            var queue = new Queue<string>();
++            queue.Enqueue(path);
++            while (queue.Count > 0)
++            {
++                var dir = queue.Dequeue();
++                result.AddRange(Directory.GetFiles(dir, searchPattern, SearchOption.TopDirectoryOnly).OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
++                foreach (var sub in Directory.GetDirectories(dir).OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
++                {
++                    queue.Enqueue(sub);
++                }
++            }
++            return result.ToArray();
++        }
++
++        /// <summary>Directory.GetDirectories (top level) with NTFS (Windows) ordering.</summary>
++        public static string[] GetDirectoriesOrdered(string path, string searchPattern = "*") =>
++            Directory.GetDirectories(path, searchPattern, SearchOption.TopDirectoryOnly).OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToArray();
+     }
+ }
+diff --git a/LegendaryExplorer/LegendaryExplorerCore/GameFilesystem/MELoadedDLC.cs b/LegendaryExplorer/LegendaryExplorerCore/GameFilesystem/MELoadedDLC.cs
+index dda1fe0..0e41ec2 100644
+--- a/LegendaryExplorer/LegendaryExplorerCore/GameFilesystem/MELoadedDLC.cs
++++ b/LegendaryExplorer/LegendaryExplorerCore/GameFilesystem/MELoadedDLC.cs
+@@ -21,7 +21,7 @@ namespace LegendaryExplorerCore.GameFilesystem
+         /// <returns>An IEnumerable of full paths to enabled DLC folders (strings)</returns>
+         public static IEnumerable<string> GetEnabledDLCFolders(MEGame game, string gameDirectoryOverride = null) =>
+             Directory.Exists(MEDirectories.GetDLCPath(game, gameDirectoryOverride))
+-                ? Directory.EnumerateDirectories(MEDirectories.GetDLCPath(game, gameDirectoryOverride)).Where(dir => IsEnabledDLC(dir, game))
++                ? MEDirectories.GetDirectoriesOrdered(MEDirectories.GetDLCPath(game, gameDirectoryOverride)).Where(dir => IsEnabledDLC(dir, game)) // macOS helper: NTFS order
+                 : Enumerable.Empty<string>();
+ 
+         /// <summary>
+@@ -32,7 +32,7 @@ namespace LegendaryExplorerCore.GameFilesystem
+         /// <returns>An IEnumerable of full paths to official DLC folders (strings)</returns>
+         public static IEnumerable<string> GetOfficialDLCFolders(MEGame game, string gameDirectoryOverride = null) =>
+             Directory.Exists(MEDirectories.GetDLCPath(game, gameDirectoryOverride))
+-                ? Directory.EnumerateDirectories(MEDirectories.GetDLCPath(game, gameDirectoryOverride)).Where(dir => IsOfficialDLC(dir, game))
++                ? MEDirectories.GetDirectoriesOrdered(MEDirectories.GetDLCPath(game, gameDirectoryOverride)).Where(dir => IsOfficialDLC(dir, game)) // macOS helper: NTFS order
+                 : Enumerable.Empty<string>();
+ 
+         /// <summary>
+diff --git a/LegendaryExplorer/LegendaryExplorerCore/GameFilesystem/MELoadedFiles.cs b/LegendaryExplorer/LegendaryExplorerCore/GameFilesystem/MELoadedFiles.cs
+index cfacff4..8943b80 100644
+--- a/LegendaryExplorer/LegendaryExplorerCore/GameFilesystem/MELoadedFiles.cs
++++ b/LegendaryExplorer/LegendaryExplorerCore/GameFilesystem/MELoadedFiles.cs
+@@ -373,11 +373,11 @@ namespace LegendaryExplorerCore.GameFilesystem
+                 var patterns = ME1FilePatterns.ToList();
+                 if (additionalExtensions != null)
+                     patterns.AddRange(additionalExtensions);
+-                return patterns.SelectMany(pattern => Directory.EnumerateFiles(Path.Combine(directory, game.CookedDirName()), pattern, SearchOption.AllDirectories));
++                return patterns.SelectMany(pattern => MEDirectories.GetFilesOrdered(Path.Combine(directory, game.CookedDirName()), pattern, SearchOption.AllDirectories));
+             }
+             if (game is MEGame.UDK)
+             {
+-                return UDKFilePatterns.SelectMany(pattern => Directory.EnumerateFiles(directory, pattern, SearchOption.AllDirectories));
++                return UDKFilePatterns.SelectMany(pattern => MEDirectories.GetFilesOrdered(directory, pattern, SearchOption.AllDirectories));
+             }
+ 
+             List<string> extensions = new List<string>();
+@@ -387,7 +387,8 @@ namespace LegendaryExplorerCore.GameFilesystem
+                 extensions.AddRange(additionalExtensions.Select(x => $"*{x}"));
+             extensions.Add("*.pcc"); //This is last, as any of the lookup methods will see if any of these files types exist in-order.
+                                          //By putting PCCs last, the lookups will be searched first when using includeTFC or includeAFC.
+-            return extensions.SelectMany(pattern => Directory.EnumerateFiles(Path.Combine(directory, game.CookedDirName()), pattern, SearchOption.AllDirectories));
++            // macOS helper: NTFS (Windows) enumeration order so duplicate file names resolve the same way.
++            return extensions.SelectMany(pattern => MEDirectories.GetFilesOrdered(Path.Combine(directory, game.CookedDirName()), pattern, SearchOption.AllDirectories));
+         }
+ 
+         /// <summary>
+diff --git a/LegendaryExplorer/LegendaryExplorerCore/Packages/IMEPackage.cs b/LegendaryExplorer/LegendaryExplorerCore/Packages/IMEPackage.cs
+index 8d7986f..e64423d 100644
+--- a/LegendaryExplorer/LegendaryExplorerCore/Packages/IMEPackage.cs
++++ b/LegendaryExplorer/LegendaryExplorerCore/Packages/IMEPackage.cs
+@@ -93,7 +93,15 @@ namespace LegendaryExplorerCore.Packages
+ #pragma warning restore CS0618 // Type or member is obsolete
+         public string baseClass;
+         //Relative to BIOGame
+-        public string pccPath;
++        // macOS helper: the property databases (and literals in code) store this with Windows '\'
++        // separators. Normalize to the host separator so Path.Combine/GetFileName work off Windows.
++        [JsonProperty("pccPath")]
++        public string pccPath
++        {
++            get => _pccPath;
++            set => _pccPath = value?.Replace('\\', Path.DirectorySeparatorChar);
++        }
++        private string _pccPath;
+ 
+         public int exportIndex;
+         public bool isAbstract;
+diff --git a/LegendaryExplorer/LegendaryExplorerCore/Packages/MEPackage.cs b/LegendaryExplorer/LegendaryExplorerCore/Packages/MEPackage.cs
+index cebe109..6d3992f 100644
+--- a/LegendaryExplorer/LegendaryExplorerCore/Packages/MEPackage.cs
++++ b/LegendaryExplorer/LegendaryExplorerCore/Packages/MEPackage.cs
+@@ -1,4 +1,4 @@
+-﻿using LegendaryExplorerCore.Compression;
++using LegendaryExplorerCore.Compression;
+ using LegendaryExplorerCore.DebugTools;
+ using LegendaryExplorerCore.Gammtek.IO;
+ using LegendaryExplorerCore.Helpers;
+@@ -1298,6 +1298,11 @@ namespace LegendaryExplorerCore.Packages
+ 
+         public MemoryStream SaveToStream(bool compress = false, bool includeAdditionalPackagesToCook = true, bool includeDependencyTable = true)
+         {
++            // macOS helper: see PackageSaver.NeverCompress.
++            if (PackageSaver.NeverCompress)
++            {
++                compress = false;
++            }
+             return compress
+                 ? saveCompressed(this, true, includeAdditionalPackagesToCook, includeDependencyTable)
+                 : saveUncompressed(this, true, includeAdditionalPackagesToCook, includeDependencyTable);
+diff --git a/LegendaryExplorer/LegendaryExplorerCore/Packages/PackageSaver.cs b/LegendaryExplorer/LegendaryExplorerCore/Packages/PackageSaver.cs
+index f636fd2..63b87a2 100644
+--- a/LegendaryExplorer/LegendaryExplorerCore/Packages/PackageSaver.cs
++++ b/LegendaryExplorer/LegendaryExplorerCore/Packages/PackageSaver.cs
+@@ -1,4 +1,4 @@
+-﻿using System;
++using System;
+ using System.Collections.Generic;
+ using System.IO;
+ using System.Threading.Tasks;
+@@ -42,6 +42,16 @@ namespace LegendaryExplorerCore.Packages
+         /// <param name="includeAdditionalPackagesToCook"></param>
+         /// <param name="includeDependencyTable"></param>
+         /// <param name="diskIOSyncLock">Object that can be used to force a lock on write operations, which can be used to prevent concurrent operations on the same package file. If null, a lock is not used.</param>
++        /// <summary>
++        /// When true, packages are always saved uncompressed regardless of the requested compression.
++        /// </summary>
++        public static bool NeverCompress { get; set; }
++
++        /// <summary>
++        /// Invoked with the destination path just before a package is written to disk.
++        /// </summary>
++        public static Action<string> BeforePackageSave { get; set; }
++
+         public static void Save(this IMEPackage package, string savePath = null, bool? compress = null, bool includeAdditionalPackagesToCook = true, bool includeDependencyTable = true, object diskIOSyncLock = null)
+         {
+             if (package == null)
+@@ -61,6 +71,16 @@ namespace LegendaryExplorerCore.Packages
+                 compressPackage = package.Game.IsLEGame();
+             }
+ 
++            // macOS helper: no Oodle compressor is available there, so packages are always saved
++            // uncompressed (the games load uncompressed packages normally).
++            if (NeverCompress)
++            {
++                compressPackage = false;
++            }
++
++            // macOS helper: lets the host back up the original file before it is overwritten.
++            BeforePackageSave?.Invoke(savePath ?? package.FilePath);
++
+             if ((package.IsMemoryPackage || package.FilePath == null) && savePath == null)
+             {
+                 throw new InvalidOperationException("Cannot save a temporary memory-based package! You must pass a save path to save a memory package.");
+diff --git a/LegendaryExplorer/LegendaryExplorerCore/Unreal/TOCCreator.cs b/LegendaryExplorer/LegendaryExplorerCore/Unreal/TOCCreator.cs
+index 9c936cc..b86fa03 100644
+--- a/LegendaryExplorer/LegendaryExplorerCore/Unreal/TOCCreator.cs
++++ b/LegendaryExplorer/LegendaryExplorerCore/Unreal/TOCCreator.cs
+@@ -1,4 +1,4 @@
+-﻿using System;
++using System;
+ using System.Collections.Generic;
+ using System.Diagnostics;
+ using System.IO;
+@@ -34,7 +34,8 @@ namespace LegendaryExplorerCore.Unreal
+         public static IEnumerable<FileInfo> GetTocableFiles(string path)
+         {
+             var res = new List<FileInfo>();
+-            foreach (var f in new DirectoryInfo(path).GetFiles("*.*"))
++            // macOS helper: NTFS (Windows) enumeration order.
++            foreach (var f in new DirectoryInfo(path).GetFiles("*.*").OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
+             {
+                 if (f.Name.CaseInsensitiveEquals("PCConsoleTOC.bin"))
+                     continue;
+@@ -60,7 +61,7 @@ namespace LegendaryExplorerCore.Unreal
+             // Do not include the directory's existing PCConsoleTOC.bin
+             res.AddRange(GetTocableFiles(baseFolder));
+             DirectoryInfo folder = new DirectoryInfo(baseFolder);
+-            var folders = folder.GetDirectories();
++            var folders = folder.GetDirectories().OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase).ToArray(); // macOS helper: NTFS order
+             if (folders.Length != 0)
+             {
+                 if (!directoryName.Equals("BioGame", StringComparison.InvariantCultureIgnoreCase))
+@@ -104,7 +105,7 @@ namespace LegendaryExplorerCore.Unreal
+ 
+             if (Directory.Exists(MEDirectories.GetDLCPath(game, gamePathRoot)) && game != MEGame.LE1)
+             {
+-                tocTargets.AddRange(Directory.EnumerateDirectories(MEDirectories.GetDLCPath(game, gamePathRoot))
++                tocTargets.AddRange(MEDirectories.GetDirectoriesOrdered(MEDirectories.GetDLCPath(game, gamePathRoot)) // macOS helper: NTFS order
+                     .Where(f => Path.GetFileName(f).StartsWith("DLC_", StringComparison.OrdinalIgnoreCase))
+                     .Select(f => f.ToString()));
+             }
+@@ -294,7 +295,8 @@ namespace LegendaryExplorerCore.Unreal
+ 
+             // Build dictionary of DLCs in mount priority
+             Dictionary<int, string> dlcMounts = new Dictionary<int, string>();
+-            string[] dlcList = Directory.GetDirectories(Path.Combine(biogameDirectory, "DLC"), "*.*", SearchOption.TopDirectoryOnly);
++            // macOS helper: NTFS (Windows) order, so which DLC wins a duplicate mount is the same as on Windows.
++            string[] dlcList = MEDirectories.GetDirectoriesOrdered(Path.Combine(biogameDirectory, "DLC"), "*.*");
+             foreach (var dlcFolder in dlcList)
+             {
+                 var dlcName = Path.GetFileName(dlcFolder);
+@@ -345,11 +347,15 @@ namespace LegendaryExplorerCore.Unreal
+             {
+                 var tbf = new TOCBinFile();
+ 
++                // The game reads TOC paths as Windows paths. On macOS/Linux, file system paths use '/',
++                // so normalize to '\\' and take the file name without relying on the host separator.
++                filesystemInfo = filesystemInfo.Select(f => (f.relativeFilename.Replace('/', '\\'), f.size)).ToList();
++
+                 // Generate hashes for all names
+                 Dictionary<(string relativeFilename, int size), uint> fullHashMap = new Dictionary<(string relativeFilename, int size), uint>(); // Unbounded hash table size
+                 foreach (var f in filesystemInfo)
+                 {
+-                    fullHashMap[f] = GetStringFullHash(Path.GetFileName(f.relativeFilename));
++                    fullHashMap[f] = GetStringFullHash(f.relativeFilename.Substring(f.relativeFilename.LastIndexOf('\\') + 1));
+                 }
+ 
+                 // Calculate optimal hash table size for performance

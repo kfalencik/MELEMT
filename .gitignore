@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+/build/
+
+# Claude Code local settings
+.claude/
+
+# Helper upstream sources (fetched by Helper/fetch-sources.sh)
+/Helper/external/
+
+# Helper build output (built by Helper/build-helper.sh; too large for git, shipped in the release zip)
+/Helper/LEModHelper/bin/
+/Helper/LEModHelper/obj/
+/Helper/LEModHelper/publish/
+/Helper/oodle-rs/target/
+/Helper/compression-rs/target/
+/MEMT/Helper/LEModHelper

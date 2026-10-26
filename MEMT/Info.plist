@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>CFBundleURLName</key>
+			<string>Nexus Mods download link</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>nxm</string>
+			</array>
+		</dict>
+	</array>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://raw.githubusercontent.com/kfalencik/MELEMT/main/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>21jQu57xBYTkIOhOK8ihwrp1owINv/yEVUlwuUtGXho=</string>
+</dict>
+</plist>

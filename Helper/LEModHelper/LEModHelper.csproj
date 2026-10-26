@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Command-line helper the Mac app runs for install steps that edit game packages
+       (merge mods, LE1 TLK merge, 2DA/Coalesced/PlotManager merges, TOC). Built on
+       ME3TweaksCore + LegendaryExplorerCore, the same libraries ME3Tweaks Mod Manager uses. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RuntimeIdentifier>osx-arm64</RuntimeIdentifier>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <SelfContained>true</SelfContained>
+    <NoWarn>$(NoWarn);CS1998;CS0168;CS0219;CS8632</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Upstream projects force PlatformTarget=x64, which can't load into an Apple Silicon process. -->
+    <ProjectReference Include="../external/ME3TweaksCore/ME3TweaksCore/ME3TweaksCore.csproj" AdditionalProperties="PlatformTarget=AnyCPU;Platform=AnyCPU" />
+    <ProjectReference Include="../external/ME3TweaksCore/ME3TweaksCore/submodules/LegendaryExplorer/LegendaryExplorer/LegendaryExplorerCore/LegendaryExplorerCore.csproj" AdditionalProperties="PlatformTarget=AnyCPU;Platform=AnyCPU" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="Newtonsoft.Json.Schema" Version="4.0.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Same resource names M3 uses, so the copied merge code finds them unchanged. -->
+    <EmbeddedResource Include="M3/merge/vanillaclasses.json.lzma" LogicalName="ME3TweaksModManager.modmanager.objects.mod.merge.vanillaclasses.json.lzma" />
+    <EmbeddedResource Include="M3/merge/schema.json" LogicalName="ME3TweaksModManager.modmanager.objects.mod.merge.v2.schema.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../oodle-rs/target/release/liboodle_shim.dylib" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="../compression-rs/target/release/libCompressionWrappers.dylib" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
