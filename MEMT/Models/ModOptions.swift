@@ -105,7 +105,7 @@ nonisolated enum ModOptionParser {
             dlcRequirements: list("DLCRequirements"),
             requiredFiles: zip(paths, sizes).map { (path: $0, size: $1) },
             sortIndex: value("SortIndex").flatMap { Int($0) },
-            mergeFiles: list("MergeFiles"),
+            mergeFiles: list("MergeFiles").map { $0.replacingOccurrences(of: "\\", with: "/") },
             tlkOptionKey: value("LE1TLKOptionKey"),
             applicableText: value("ApplicableAutoText"),
             notApplicableText: value("NotApplicableAutoText"),
@@ -415,7 +415,14 @@ nonisolated struct InstallPlan: Sendable {
                     basegameFiles["\(target)/\(name)"] = try source("\(rootPath)/\(entry)")
                 }
             case "OP_APPLY_MERGEMODS":
-                mergeMods += option.mergeFiles
+                mergeMods += option.mergeFiles.map { $0.trimmingCharacters(in: CharacterSet(charactersIn: "/")) }
+            case "OP_INSTALL":
+                // Unlike OP_SUBSTITUTE, this adds the file even if the base job doesn't install it.
+                guard let target = option.modFile else { continue }
+                let destination = ModPackage.normalizeBasegameDestination(target, trimDots: true)
+                if !basegameFiles.keys.contains(where: { $0.caseInsensitiveCompare(destination) == .orderedSame }) {
+                    basegameFiles[destination] = try source(option.altFile)
+                }
             default: break
             }
         }

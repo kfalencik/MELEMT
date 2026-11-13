@@ -120,11 +120,21 @@ nonisolated struct ModPackage: Identifiable, Sendable {
     var canInstall: Bool {
         blockingIssues.isEmpty && game != nil
             && (!jobs.isEmpty || !basegameFiles.isEmpty || !launcherFiles.isEmpty || !mergeMods.isEmpty || usesTLKMerge || !asiMods.isEmpty
-                || options.contains { $0.operation == "OP_ADD_CUSTOMDLC" })
+                || options.contains { Self.contentOperations.contains($0.operation) })
     }
 
     /// Whether installing this mod edits the game's own files, which are backed up first.
-    var modifiesBasegame: Bool { !basegameFiles.isEmpty || !launcherFiles.isEmpty || !mergeMods.isEmpty || usesTLKMerge }
+    var modifiesBasegame: Bool {
+        !basegameFiles.isEmpty || !launcherFiles.isEmpty || !mergeMods.isEmpty || usesTLKMerge
+            || options.contains { $0.header == .basegame && Self.contentOperations.contains($0.operation) }
+    }
+
+    /// Option operations that install something on their own. Mods such as LE2 Skip Mini Games ship
+    /// everything as optional merge mods, with no files outside their options.
+    private static let contentOperations: Set<String> = [
+        "OP_ADD_CUSTOMDLC", "OP_ADD_FOLDERFILES_TO_CUSTOMDLC", "OP_ADD_MULTILISTFILES_TO_CUSTOMDLC",
+        "OP_APPLY_MULTILISTFILES", "OP_APPLY_MERGEMODS", "OP_INSTALL",
+    ]
 
     /// Headers for install steps this app doesn't implement. Skipping them would leave a mod half-installed,
     /// so mods that use them are refused rather than installed partially.
@@ -279,17 +289,19 @@ nonisolated struct ModPackage: Identifiable, Sendable {
             }
         }
 
-        var mergeMods: [String] = []
-        for mergeMod in Self.list(ini.value("BASEGAME", "mergemods")) {
+        /// Merge mods live in the mod's MergeMods folder; returns the name relative to it if it's there.
+        func validMergeMod(_ mergeMod: String) -> String? {
             let relative = mergeMod.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
             if relative.split(separator: "/").contains("..") {
                 blocking.append("Merge mod \"\(mergeMod)\" has an invalid name.")
             } else if PathResolver.resolve("MergeMods/\(relative)", in: root) == nil {
                 blocking.append("Merge mod \"\(relative)\" is missing from the MergeMods folder.")
             } else {
-                mergeMods.append(relative)
+                return relative
             }
+            return nil
         }
+        let mergeMods = Self.list(ini.value("BASEGAME", "mergemods")).compactMap(validMergeMod)
 
         let usesTLKMerge = game == .le1
             && (Double(featureLevel) ?? 0) >= 7
@@ -375,9 +387,27 @@ nonisolated struct ModPackage: Identifiable, Sendable {
         for option in options where !supported.contains(option.operation) {
             blocking.append("The optional component \"\(option.name)\" uses \(option.operation), which this app can't install yet.")
         }
+        for option in options where option.header == .basegame {
+            switch option.operation {
+            case "OP_APPLY_MERGEMODS":
+                _ = option.mergeFiles.map(validMergeMod)
+            case "OP_INSTALL":
+                // Installs AltFile at ModFile even when the base job doesn't include that file.
+                guard let target = option.modFile, let altFile = option.altFile else {
+                    blocking.append("The optional component \"\(option.name)\" doesn't say which file to install.")
+                    continue
+                }
+                if let issue = Self.checkSourceExtension(altFile) {
+                    blocking.append(issue)
+                } else if let game, let issue = Self.basegameSiloIssue(Self.normalizeBasegameDestination(target, trimDots: true), game: game, modName: name) {
+                    blocking.append(issue)
+                }
+            default: break
+            }
+        }
 
         if jobs.isEmpty && basegameFiles.isEmpty && launcherFiles.isEmpty && mergeMods.isEmpty && !usesTLKMerge && asiMods.isEmpty
-            && !options.contains(where: { $0.operation == "OP_ADD_CUSTOMDLC" }) && blocking.isEmpty {
+            && !options.contains(where: { Self.contentOperations.contains($0.operation) }) && blocking.isEmpty {
             blocking.append("This mod has nothing this app can install.")
         }
 
@@ -473,6 +503,7 @@ nonisolated struct ModPackage: Identifiable, Sendable {
     }
 
     /// The game a launcher mod belongs with: from its files (the launcher's ME1/ME2/ME3 videos) or its name.
+    /// A multiplayer mod belongs with LE3; anything else unrecognized falls back to LE1.
     private static func launcherHomeGame(name: String, files: [BasegameFile]) -> LEGame {
         let fileNames = files.map { ($0.gameRelativePath as NSString).lastPathComponent.uppercased() }
         let upperName = name.uppercased()
@@ -483,6 +514,8 @@ nonisolated struct ModPackage: Identifiable, Sendable {
         where upperName.contains("LE\(number)") || upperName.contains("ME\(number)") || upperName.contains("MASS EFFECT \(number)") {
             return game
         }
+        // Only ME3 had multiplayer, so launcher mods for it (Legendary Edition Multiplayer) belong with LE3.
+        if upperName.contains("MULTIPLAYER") { return .le3 }
         return .le1
     }
 
