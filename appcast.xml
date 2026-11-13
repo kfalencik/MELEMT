@@ -6,6 +6,23 @@
         <description>MELEMT updates</description>
         <language>en</language>
         <item>
+            <title>Version 1.0.2</title>
+            <pubDate>Fri, 13 Nov 2026 18:18:24 GMT</pubDate>
+            <sparkle:version>3</sparkle:version>
+            <sparkle:shortVersionString>1.0.2</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <sparkle:fullReleaseNotesLink>https://github.com/kfalencik/MELEMT/releases/tag/v1.0.2</sparkle:fullReleaseNotesLink>
+            <description><![CDATA[
+<h3>MELEMT 1.0.2</h3>
+<ul>
+<li>Mods that keep everything in optional components now install, instead of saying &quot;This mod has nothing this app can install&quot; (for example LE2 Skip Mini Games)</li>
+<li>Optional components that add a game file the main mod doesn&#x27;t include are now installed</li>
+<li>Mods whose options change game files now show that the game files will be backed up first</li>
+</ul>
+            ]]></description>
+            <enclosure url="https://github.com/kfalencik/MELEMT/releases/download/v1.0.2/MELEMT-1.0.2.zip" type="application/octet-stream" sparkle:edSignature="mQc11ljeCFqfguVq5F0M2fwrq7twT/qjKpXySxgRXE+sl8BviY+54aTtA0NCqrrqPskZMey8pQndsuis3eoJBA==" length="54705143" />
+        </item>
+        <item>
             <title>Version 1.0.1</title>
             <pubDate>Mon, 26 Oct 2026 14:06:34 GMT</pubDate>
             <sparkle:version>2</sparkle:version>
